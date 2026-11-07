@@ -25,6 +25,9 @@ export class ThreeSceneRenderer {
     this.controls.minDistance = 0.025;
     this.controls.maxDistance = 3;
     this.controls.maxPolarAngle = Math.PI * 0.51;
+    this.controls.addEventListener("start", () => {
+      this.activePreset = null;
+    });
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x627577, 2.4));
     const light = new THREE.DirectionalLight(0xffffff, 3.2);
     light.position.set(-0.5, -0.5, 1.5);
@@ -60,6 +63,10 @@ export class ThreeSceneRenderer {
   }
 
   setScene(scene) {
+    this.cubeScene =
+      scene.geoms.some((geom) => geom.name === "cube_geom") &&
+      scene.geoms.some((geom) => geom.name.startsWith("nominal_path_"));
+    this.fittedCubeScene = false;
     for (const object of this.objects) this.scene.remove(object);
     for (const resource of this.resources) resource.dispose();
     this.resources.clear();
@@ -129,9 +136,83 @@ export class ThreeSceneRenderer {
       this.objects[index].position.set(x, y, z);
       this.objects[index].quaternion.set(qx, qy, qz, w);
     });
+    if (snapshot.focus) {
+      this.reviewFocus = snapshot.focus;
+      this.preset("detail");
+    }
+    if (this.cubeScene) {
+      this.cubePosition = this.objects
+        .find((object) => object.name === "cube_geom")
+        .position.clone();
+      this.physicalBounds = new THREE.Box3();
+      for (const object of this.objects) {
+        if (object.geometry.type === "PlaneGeometry") continue;
+        object.updateMatrixWorld(true);
+        if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+        this.physicalBounds.union(
+          object.geometry.boundingBox.clone().applyMatrix4(object.matrixWorld),
+        );
+      }
+      if (!this.fittedCubeScene || this.activePreset === "detail") {
+        this.preset(this.activePreset || "perspective");
+        this.fittedCubeScene = true;
+      }
+    }
   }
 
   preset(name) {
+    this.activePreset = name;
+    if (this.reviewFocus) {
+      const target = new THREE.Vector3().fromArray(this.reviewFocus.target);
+      const direction = name === "top" ? [0, -.001, 1] : name === "front" ? [0, -1, .12] : [.65, -.85, .6];
+      const offset = new THREE.Vector3(...direction).normalize().multiplyScalar(this.reviewFocus.radius * 3);
+      this.camera.position.copy(target).add(offset);
+      this.controls.target.copy(target);
+      this.controls.update();
+      return;
+    }
+    if (
+      this.cubeScene &&
+      this.physicalBounds &&
+      !this.physicalBounds.isEmpty()
+    ) {
+      const center = this.physicalBounds.getCenter(new THREE.Vector3());
+      const size = this.physicalBounds.getSize(new THREE.Vector3());
+      const halfFov = THREE.MathUtils.degToRad(this.camera.fov / 2);
+      let target = center;
+      let offset;
+      if (name === "detail") {
+        target = this.cubePosition;
+        offset = new THREE.Vector3(0.24, -0.4, 0.24);
+      } else if (name === "front") {
+        const distance =
+          1.15 *
+            Math.max(
+              size.x / (2 * Math.tan(halfFov) * this.camera.aspect),
+              size.z / (2 * Math.tan(halfFov)),
+            ) +
+          size.y / 2;
+        offset = new THREE.Vector3(0, -distance, 0);
+      } else if (name === "top") {
+        const distance =
+          1.15 *
+            Math.max(
+              size.x / (2 * Math.tan(halfFov) * this.camera.aspect),
+              size.y / (2 * Math.tan(halfFov)),
+            ) +
+          size.z / 2;
+        offset = new THREE.Vector3(0, -0.001, distance);
+      } else {
+        const distance = (size.length() / (2 * Math.sin(halfFov))) * 1.1;
+        offset = new THREE.Vector3(0.68, -0.88, 0.6)
+          .normalize()
+          .multiplyScalar(distance);
+      }
+      this.camera.position.copy(target).add(offset);
+      this.controls.target.copy(target);
+      this.controls.update();
+      return;
+    }
     const presets = {
       perspective: [
         [0.68, -0.88, 0.72],

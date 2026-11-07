@@ -17,38 +17,56 @@
         <div class="nav-current">
           <span>▦</span> Environment resets <span class="nav-dot"></span>
         </div>
-        <div class="sidebar-section">
-          <label for="bank">RESET BANK</label
-          ><select id="bank">
-            <option value="">All banks</option>
-          </select>
-          <p id="bank-note">Discovering saved states…</p>
-        </div>
-        <div class="sidebar-section">
-          <label for="task">ASSEMBLY TASK</label
-          ><select id="task">
-            <option value="">All tasks</option>
-          </select>
-        </div>
-        <div class="sidebar-section">
-          <label>DATA SPLIT</label>
-          <div
-            id="split"
-            class="split-controls"
-            role="group"
-            aria-label="Data split"
-          >
-            <button data-value="" class="active">All</button
-            ><button data-value="train">TRAIN</button
-            ><button data-value="eval">EVAL</button>
+        <details id="browser-options" class="browser-options" open>
+          <summary>Collection & filters</summary>
+          <div class="sidebar-section">
+            <label for="bank">RESET BANK</label
+            ><select id="bank">
+              <option value="">All banks</option>
+            </select>
+            <p id="bank-note">Discovering saved states…</p>
+            <button
+              id="refresh-collections"
+              class="refresh-collections"
+              type="button"
+            >
+              Refresh collections
+            </button>
           </div>
-        </div>
-        <div class="sidebar-section">
-          <label for="family">RESET FAMILY</label
-          ><select id="family">
-            <option value="">All families</option>
-          </select>
-        </div>
+          <div class="sidebar-section">
+            <label for="task">ASSEMBLY TASK</label
+            ><select id="task">
+              <option value="">All tasks</option>
+            </select>
+          </div>
+          <div class="sidebar-section">
+            <label>DATA SPLIT</label>
+            <div
+              id="split"
+              class="split-controls"
+              role="group"
+              aria-label="Data split"
+            >
+              <button data-value="" class="active">All</button
+              ><button data-value="train">TRAIN</button
+              ><button data-value="eval">EVAL</button>
+            </div>
+          </div>
+          <div class="sidebar-section">
+            <label for="family">RESET FAMILY</label
+            ><select id="family">
+              <option value="">All families</option>
+            </select>
+          </div>
+          <div class="sidebar-section" id="start-kind-section" hidden>
+            <label for="kind">START TYPE</label>
+            <select id="kind">
+              <option value="">All starts</option>
+              <option value="nominal">Approved nominal poses</option>
+              <option value="variation">Generated variations</option>
+            </select>
+          </div>
+        </details>
         <div class="sidebar-bottom">
           <span class="live-dot"></span>
           <div>
@@ -87,9 +105,10 @@
               >
               <div class="list-count">
                 <span id="filtered-count">Loading resets…</span
-                ><span>SEED ↑</span>
+                ><span id="list-order">SEED ↑</span>
               </div>
             </div>
+            <nav id="state-entries" aria-label="Assembly states" hidden></nav>
             <div
               id="entries"
               role="listbox"
@@ -102,6 +121,60 @@
             </div>
           </div>
           <div class="inspection">
+            <section
+              id="state-context"
+              class="state-context"
+              aria-label="Selected assembly state"
+              hidden
+            >
+              <div class="state-context-heading">
+                <span id="stage-number"></span><span id="stage-group"></span>
+              </div>
+              <div class="state-tabs" role="group" aria-label="State view">
+                <button id="reference-tab" type="button" aria-pressed="true">
+                  Reference pose
+                </button>
+                <button id="variations-tab" type="button" aria-pressed="false">
+                  Variations <span id="variation-count">0</span>
+                </button>
+              </div>
+              <div id="variation-picker" hidden>
+                <div class="variation-filters">
+                  <label
+                    >Split<select id="variation-split">
+                      <option value="">All splits</option>
+                      <option value="train">Train</option>
+                      <option value="eval">Evaluation</option>
+                    </select></label
+                  >
+                  <label
+                    >Validation<select id="variation-status">
+                      <option value="">All statuses</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="pending">Pending</option>
+                      <option value="rejected">Rejected</option>
+                    </select></label
+                  >
+                </div>
+                <div
+                  id="variation-entries"
+                  class="variation-entries"
+                  role="group"
+                  aria-label="Variations of selected state"
+                ></div>
+                <div class="variation-pagination">
+                  <button
+                    id="variation-prev"
+                    aria-label="Previous variation page"
+                  >
+                    ←</button
+                  ><span id="variation-page"></span
+                  ><button id="variation-next" aria-label="Next variation page">
+                    →
+                  </button>
+                </div>
+              </div>
+            </section>
             <div class="view-toolbar">
               <div class="selected-title">
                 <span class="live-dot"></span
@@ -116,6 +189,12 @@
                 </button>
               </div>
             </div>
+            <div
+              id="selection-status"
+              class="selection-status"
+              role="status"
+              hidden
+            ></div>
             <div id="viewport">
               <div id="scene-view"></div>
               <div class="viewport-top">
@@ -153,12 +232,36 @@
                 ><button id="next" title="Next reset (→)">→</button>
               </div>
             </div>
+            <section class="point-cloud-section" aria-labelledby="point-cloud-title">
+              <div class="point-cloud-heading">
+                <div><h2 id="point-cloud-title">Point cloud</h2><p id="point-cloud-status" role="status">Select an assembly state</p></div>
+                <div class="point-cloud-actions"><button id="point-cloud-fit" disabled>Fit points</button><button id="point-cloud-download" disabled>Download JSON</button></div>
+              </div>
+              <div id="point-cloud-meta"></div>
+              <div id="point-cloud-view" hidden aria-label="Interactive policy point cloud"></div>
+              <p id="point-cloud-empty">No assembly state selected.</p>
+              <div id="point-cloud-legend" class="point-cloud-legend"></div>
+              <p id="point-cloud-note">All ordered input points · Drag to orbit · Scroll to zoom</p>
+            </section>
+            <details
+              id="variation-review"
+              class="variation-review"
+              aria-label="Variation validation and sampling"
+              hidden
+            >
+              <summary>Noise & validation details</summary>
+              <dl></dl>
+            </details>
             <div id="details" class="details">
               <div><span>TASK</span><strong>—</strong></div>
               <div><span>SEED</span><strong>—</strong></div>
               <div><span>FAMILY</span><strong>—</strong></div>
               <div><span>BANK</span><strong>—</strong></div>
             </div>
+            <details id="qualification" class="qualification" hidden>
+              <summary>Reset qualification</summary>
+              <dl></dl>
+            </details>
           </div>
         </section>
         <footer class="page-footer">

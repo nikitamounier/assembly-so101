@@ -12,11 +12,8 @@ import mujoco
 from aiohttp import ClientSession, WSMsgType, web
 from yarl import URL
 
-from assembly_policy.so101.env import STATE_SPEC
-from assembly_policy.so101.resets import signature
-from assembly_policy.so101.scene import model
-
 from .banks import ResetCatalog
+from .point_cloud import PolicyPointCloud
 from .scene import display_xml, scene_poses, visual_scene
 
 STATIC = Path(__file__).parent / "static"
@@ -43,13 +40,46 @@ async def isolation(request, handler):
 
 
 class ResetApplication:
-    def __init__(self, roots, studio_python, port):
-        self.model = model()
+    def __init__(
+        self, roots, studio_python, port, *, scene="so101", model=None, model_signature=None, state_spec=None
+    ):
+        if scene not in ("so101", "cube-trial", "wowrobo-components", "wowrobo-layout"):
+            raise ValueError(f"Unknown viewer scene: {scene}")
+        if model is None or model_signature is None:
+            if scene == "cube-trial":
+                from assembly_policy.cube_trial.core import model as make_model
+                from assembly_policy.cube_trial.core import signature
+            else:
+                from assembly_policy.so101.resets import signature
+                from assembly_policy.so101.scene import model as make_model
+            if model is None:
+                model = make_model()
+            if model_signature is None:
+                model_signature = signature()
+        self.model = model
+        self.scene_name = scene
+        self.state_spec = (
+            state_spec
+            if state_spec is not None
+            else (
+                mujoco.mjtState.mjSTATE_INTEGRATION
+                if scene == "cube-trial"
+                else mujoco.mjtState.mjSTATE_FULLPHYSICS
+            )
+        )
         self.data = mujoco.MjData(self.model)
         self.scene = visual_scene(self.model)
-        self.catalog = ResetCatalog(roots, signature(), mujoco.mj_stateSize(self.model, STATE_SPEC))
+        self.bank_roots = list(roots)
+        self.model_signature = model_signature
+        self.catalog = ResetCatalog(
+            self.bank_roots,
+            model_signature,
+            mujoco.mj_stateSize(self.model, self.state_spec),
+            state_spec=self.state_spec,
+        )
         self.studio_python = Path(studio_python).expanduser().absolute()
         self.port = port
+        self.point_cloud = PolicyPointCloud(self.model, self.scene_name)
         self.version = 0
         self.snapshot = None
         self.studio_process = None
@@ -63,17 +93,21 @@ class ResetApplication:
     def select(self, entry_id):
         entry, state = self.catalog.state(entry_id)
         mujoco.mj_resetData(self.model, self.data)
-        mujoco.mj_setState(self.model, self.data, state, STATE_SPEC)
+        mujoco.mj_setState(self.model, self.data, state, self.state_spec)
         # Kinematics only: saved contacts/velocities are never advanced or settled.
         mujoco.mj_kinematics(self.model, self.data)
         self.version += 1
         self.snapshot = dict(
             version=self.version,
+            point_cloud=self.point_cloud.snapshot(self.data, entry),
             entry=entry,
             poses=scene_poses(self.model, self.data, self.scene),
             time=float(self.data.time),
             qpos=self.data.qpos.tolist(),
             qvel=self.data.qvel.tolist(),
+            focus=entry.get("focus"),
+            qualification=self.catalog.qualifications.get(entry_id),
+            variation=self.catalog.variations.get(entry_id),
         )
         return self.snapshot
 
@@ -83,8 +117,29 @@ class ResetApplication:
                 banks=self.catalog.banks,
                 entries=self.catalog.entries,
                 studio_installed=self.studio_python.is_file(),
+                scene=self.scene_name,
+                default_bank=self.catalog.default_bank,
             )
         )
+
+    def refresh_catalog(self):
+        """Reindex atomically published banks without changing the loaded model."""
+        selected = self.snapshot["entry"]["id"] if self.snapshot else None
+        self.catalog = ResetCatalog(
+            self.bank_roots,
+            self.model_signature,
+            mujoco.mj_stateSize(self.model, self.state_spec),
+            state_spec=self.state_spec,
+        )
+        if self.catalog.entries:
+            self.select(selected if selected in self.catalog.by_id else self.catalog.entries[0]["id"])
+        else:
+            self.snapshot = None
+
+    async def refresh_handler(self, request):
+        self.check_origin(request)
+        self.refresh_catalog()
+        return await self.catalog_handler(request)
 
     async def scene_handler(self, request):
         return web.json_response(self.scene)
@@ -234,6 +289,7 @@ class ResetApplication:
         app = web.Application(middlewares=[isolation], client_max_size=64 * 1024)
         app.cleanup_ctx.append(self.lifecycle)
         app.router.add_get("/api/catalog", self.catalog_handler)
+        app.router.add_post("/api/refresh", self.refresh_handler)
         app.router.add_get("/api/scene", self.scene_handler)
         app.router.add_get("/api/state", self.state_handler)
         app.router.add_post("/api/select", self.select_handler)

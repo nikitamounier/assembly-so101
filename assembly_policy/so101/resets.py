@@ -24,6 +24,7 @@ def signature():
     loose = build_xml()
     assembled = build_xml(True)
     digest = hashlib.sha256((loose + assembled).replace(str(ASSETS), "ASSETS").encode())
+    digest.update(mujoco.__version__.encode())
     digest.update((ASSETS / "parts/manifest.json").read_bytes())
     digest.update(json.dumps(initialization_identity(), sort_keys=True).encode())
     root = ET.fromstring(loose)

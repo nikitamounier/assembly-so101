@@ -214,7 +214,7 @@
     ]
   },
   "profile": "shared-side-v14-horn-support",
-  "bank_directory": "data/so101/banks_shared_v14",
+  "bank_directory": "data/so101/banks_shared_v14_mj4",
   "contact_search": {
     "initpoints": 4,
     "iterations": 10
@@ -644,7 +644,7 @@
     }
   },
   "reset_distribution": "all_loose",
-  "reference_prefix": "data/so101/shared_v14_reference",
+  "reference_prefix": "data/so101/shared_v14_mj4_reference",
   "motor_base_search": {
     "initpoints": 40,
     "iterations": 40

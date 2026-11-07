@@ -1,7 +1,7 @@
-# Qualified installed runtime, Python 3.12 / Linux x86-64.
+# Training runtime, Python 3.12 / Linux x86-64.
 --extra-index-url https://download.pytorch.org/whl/cu128
 torch==2.11.0+cu128
-mujoco==3.17.0
+mujoco==4.0.0
 numpy==2.5.4
 scipy==1.18.1
 imageio==2.38.1

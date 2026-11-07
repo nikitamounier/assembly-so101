@@ -2,7 +2,7 @@
 set -euo pipefail
 contact_plugin_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 contact_python=${PYTHON:-python}
-contact_mujoco_dir=$("$contact_python" -c 'import pathlib,mujoco; assert mujoco.__version__=="3.17.0", "Contact search adapter requires MuJoCo3.17.0"; print(pathlib.Path(mujoco.__file__).parent)')
+contact_mujoco_dir=$("$contact_python" -c 'import pathlib,mujoco; assert mujoco.__version__=="4.0.0", "Contact search adapter requires MuJoCo 4.0.0"; print(pathlib.Path(mujoco.__file__).parent)')
 mkdir -p "$contact_plugin_dir/build"
 if [[ "$(uname -s)" == Darwin ]]; then
   contact_library=$(find "$contact_mujoco_dir" -name 'libmujoco*.dylib' -print -quit)

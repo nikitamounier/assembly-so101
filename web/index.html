@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f3ef" />
+    <title>SO-101 · Reset explorer</title>
+  </head>
+  <body>
+    <div id="app">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="SO-101 reset explorer"
+          ><span class="brand-mark">S<span>↗</span></span
+          ><span>SO—101 <small>ASSEMBLY LAB</small></span></a
+        >
+        <div class="workspace-label">WORKSPACE <span>01</span></div>
+        <div class="nav-current">
+          <span>▦</span> Environment resets <span class="nav-dot"></span>
+        </div>
+        <div class="sidebar-section">
+          <label for="bank">RESET BANK</label
+          ><select id="bank">
+            <option value="">All banks</option>
+          </select>
+          <p id="bank-note">Discovering saved states…</p>
+        </div>
+        <div class="sidebar-section">
+          <label for="task">ASSEMBLY TASK</label
+          ><select id="task">
+            <option value="">All tasks</option>
+          </select>
+        </div>
+        <div class="sidebar-section">
+          <label>DATA SPLIT</label>
+          <div
+            id="split"
+            class="split-controls"
+            role="group"
+            aria-label="Data split"
+          >
+            <button data-value="" class="active">All</button
+            ><button data-value="train">TRAIN</button
+            ><button data-value="eval">EVAL</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <label for="family">RESET FAMILY</label
+          ><select id="family">
+            <option value="">All families</option>
+          </select>
+        </div>
+        <div class="sidebar-bottom">
+          <span class="live-dot"></span>
+          <div>
+            Saved state inspection<small
+              >Exact poses. No physics stepping.</small
+            >
+          </div>
+        </div>
+      </aside>
+      <main>
+        <header class="topbar">
+          <div>Workspace <span>/</span> Environment resets</div>
+          <span class="local-badge"><i></i> LOCAL SESSION</span>
+        </header>
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow">INSPECT & UNDERSTAND</div>
+            <h1>Environment resets<span>.</span></h1>
+            <p>Explore the starting point of every assembly.</p>
+          </div>
+          <div class="total">
+            <strong id="total">—</strong><span>SAVED RESETS</span>
+          </div>
+        </section>
+        <section class="explorer">
+          <div class="reset-list">
+            <div class="list-tools">
+              <label class="search"
+                ><span>⌕</span
+                ><input
+                  id="search"
+                  type="search"
+                  placeholder="Search seed or reset ID"
+                  aria-label="Search resets"
+                /><kbd>/</kbd></label
+              >
+              <div class="list-count">
+                <span id="filtered-count">Loading resets…</span
+                ><span>SEED ↑</span>
+              </div>
+            </div>
+            <div
+              id="entries"
+              role="listbox"
+              aria-label="Saved environment resets"
+            ></div>
+            <div class="pagination">
+              <button id="page-prev" aria-label="Previous page">←</button
+              ><span id="page-label"></span
+              ><button id="page-next" aria-label="Next page">→</button>
+            </div>
+          </div>
+          <div class="inspection">
+            <div class="view-toolbar">
+              <div class="selected-title">
+                <span class="live-dot"></span
+                ><strong id="selection-title">Select a reset</strong
+                ><span id="selection-split" class="pill"></span>
+              </div>
+              <div class="mode-switch" role="group" aria-label="Renderer">
+                <button id="three-mode" class="active" aria-pressed="true">
+                  ◈ <span>3D</span></button
+                ><button id="mujoco-mode" aria-pressed="false">
+                  ▧ <span>MuJoCo</span>
+                </button>
+              </div>
+            </div>
+            <div id="viewport">
+              <div id="scene-view"></div>
+              <div class="viewport-top">
+                <span id="view-label">3D SCENE</span
+                ><button id="home-camera" title="Fit scene (F)">
+                  ⌖ <span>Fit scene</span>
+                </button>
+              </div>
+              <div
+                class="camera-presets"
+                role="group"
+                aria-label="Camera preset"
+              >
+                <button data-camera="perspective" class="active">
+                  Perspective</button
+                ><button data-camera="top">Top</button
+                ><button data-camera="front">Front</button
+                ><button data-camera="detail">Assembly</button>
+              </div>
+              <div id="view-message" class="view-message" hidden></div>
+              <div class="viewport-footer">
+                <span id="orbit-hint"
+                  >Drag to orbit · Scroll to zoom · Shift-drag to pan</span
+                ><span class="axis"><i>X</i><i>Y</i><i>Z</i></span>
+              </div>
+            </div>
+            <div class="state-toolbar">
+              <div>
+                <span class="snapshot-icon">↺</span
+                ><span>RESET SNAPSHOT <small id="state-time">—</small></span>
+              </div>
+              <div class="reset-navigation">
+                <button id="previous" title="Previous reset (←)">←</button
+                ><span id="position">—</span
+                ><button id="next" title="Next reset (→)">→</button>
+              </div>
+            </div>
+            <div id="details" class="details">
+              <div><span>TASK</span><strong>—</strong></div>
+              <div><span>SEED</span><strong>—</strong></div>
+              <div><span>FAMILY</span><strong>—</strong></div>
+              <div><span>BANK</span><strong>—</strong></div>
+            </div>
+          </div>
+        </section>
+        <footer class="page-footer">
+          <span><i></i> Both renderers share the selected native state.</span
+          ><span>← → Browse resets <b>·</b> F Fit scene</span>
+        </footer>
+        <div id="error" role="alert" hidden></div>
+      </main>
+    </div>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

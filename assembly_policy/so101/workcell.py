@@ -24,8 +24,8 @@ def configuration():
 @lru_cache(maxsize=1)
 def load_contact_search():
     """Install the version-pinned native search adapter before any model steps."""
-    if mujoco.__version__ != "3.17.0":
-        raise RuntimeError("Shared SO101 contact adapter requires MuJoCo3.17.0")
+    if mujoco.__version__ != "4.0.0":
+        raise RuntimeError("Shared SO101 contact adapter requires MuJoCo 4.0.0")
     source = ROOT / "plugin/so101_contact_search.c"
     library = ROOT / "plugin/build/libso101_contact_search.so"
     if not library.exists() or source.stat().st_mtime > library.stat().st_mtime:

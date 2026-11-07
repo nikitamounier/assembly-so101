@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+node_modules/
 assets_local/
 artifacts_local/
 data/

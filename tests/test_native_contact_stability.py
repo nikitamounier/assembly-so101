@@ -30,7 +30,14 @@ def test_contact_capacity_covers_sdf_plane_and_mesh_returns(plant):
     capacity.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
     capacity.restype = ctypes.c_int
     for name in ("base_contact", "motor_contact"):
-        assert capacity(m._address, m.geom("table").id, m.geom(name).id, 0) == mujoco.mjMAXCONPAIR
+        # MuJoCo 4 uses its four-point convex plane manifold for SDF/plane.
+        assert capacity(m._address, m.geom("table").id, m.geom(name).id, 0) == 4
+    assert (
+        capacity(m._address, m.geom("base_contact").id, m.geom("motor_contact").id, 0) == mujoco.mjMAXCONPAIR
+    )
+    assert (
+        capacity(m._address, m.geom("base_visual").id, m.geom("motor_contact").id, 0) == mujoco.mjMAXCONPAIR
+    )
     assert m.opt.sdf_initpoints == 50  # capacity is separate from actual search work
     assert m.numeric("so101_sdf_search").data[0] == 4
     assert capacity(m._address, m.geom("left_clamp_a").id, m.geom("left_clamp_b").id, 0) == 8

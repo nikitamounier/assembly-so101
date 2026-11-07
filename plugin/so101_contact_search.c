@@ -1,4 +1,4 @@
-// MuJoCo 3.17: reserve mjMAXCONPAIR through the model option, then use
+// MuJoCo 4.0: reserve mjMAXCONPAIR through the model option, then use
 // per-model search budgets inside the native collider. No preload/interposition.
 #include <math.h>
 #include <string.h>

@@ -377,3 +377,5 @@ mjPLUGIN_LIB_INIT(assemblenist_sdf) {
   register_one("assemblenist.sdf.nut", kNutN, kNutNames, kNutDefaults, nut_distance, nullptr, nullptr);
   register_one("assemblenist.sdf.grid", 1, kGridNames, kGridDefaults, nullptr, nullptr, nullptr);
 }
+
+#include "so101_grid_bounds.h"

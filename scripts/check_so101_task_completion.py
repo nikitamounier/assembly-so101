@@ -60,7 +60,7 @@ def contact_flags(m, d, task):
     for contact in d.contact:
         bodies = m.geom_bodyid[contact.geom]
         if active in bodies:
-            held |= any(m.body(int(b)).name.startswith(("left_", "right_", "driver")) for b in bodies)
+            held |= any(m.body(int(b)).name.startswith(("left_", "right_")) for b in bodies)
             deep |= contact.dist < -PENETRATION_LIMIT_M
     return held, deep
 

@@ -12,9 +12,9 @@ else
     TASK_LINK=(-shared -fPIC)
 fi
 [[ -n "$TASK_LIB" ]] || { echo "libmujoco not found in $TASK_MJ" >&2; exit 1; }
-TASK_DRIVER_TEMP=$(mktemp plugin/build/.driver.XXXXXX.so)
-trap 'rm -f -- "$TASK_DRIVER_TEMP"' EXIT
-${CXX:-g++} -O3 -std=c++17 "${TASK_LINK[@]}" -I"$TASK_MJ/include" plugin/so101_driver.cc \
-    -o "$TASK_DRIVER_TEMP" "$TASK_LIB" -Wl,-rpath,"$TASK_MJ"
-mv -f -- "$TASK_DRIVER_TEMP" plugin/build/libso101_driver.so
+TASK_SCREW_HEAD_TEMP=$(mktemp plugin/build/.screw_head.XXXXXX.so)
+trap 'rm -f -- "$TASK_SCREW_HEAD_TEMP"' EXIT
+${CXX:-g++} -O3 -std=c++17 "${TASK_LINK[@]}" -I"$TASK_MJ/include" plugin/so101_screw_head.cc \
+    -o "$TASK_SCREW_HEAD_TEMP" "$TASK_LIB" -Wl,-rpath,"$TASK_MJ"
+mv -f -- "$TASK_SCREW_HEAD_TEMP" plugin/build/libso101_screw_head.so
 PYTHON="$TASK_PYTHON" bash plugin/build_contact_search.sh

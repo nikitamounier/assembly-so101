@@ -30,8 +30,10 @@ PROTO = 2  # 2: workers send only the newest proprio frame; the learner keeps th
 
 
 def _pack(o, proto, ids=None):
-    """Observation dict for the wire: protocol 2 replaces the 150-d proprio history by its newest
-    30-d frame (the learner rebuilds the history exactly: shift, or repeat after a reset)."""
+    """Send only the newest proprio frame in protocol 2.
+
+    The learner rebuilds the history exactly: shift, or repeat after a reset.
+    """
     sel = (lambda x: x) if ids is None else (lambda x: x[ids])
     d = {k: sel(o[k]) for k in OBS_KEYS if k != "proprio"}
     if proto >= 2:

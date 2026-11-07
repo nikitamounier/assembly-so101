@@ -3,9 +3,6 @@
 import ctypes
 import hashlib
 import json
-import os
-import subprocess
-import sys
 import xml.etree.ElementTree as ET
 from functools import lru_cache
 from pathlib import Path
@@ -26,16 +23,10 @@ def load_contact_search():
     """Install the version-pinned native search adapter before any model steps."""
     if mujoco.__version__ != "4.0.0":
         raise RuntimeError("Shared SO101 contact adapter requires MuJoCo 4.0.0")
-    source = ROOT / "plugin/so101_contact_search.c"
+    from .native_build import ensure_plugins
+
+    ensure_plugins()
     library = ROOT / "plugin/build/libso101_contact_search.so"
-    if not library.exists() or source.stat().st_mtime > library.stat().st_mtime:
-        subprocess.run(
-            ["bash", str(ROOT / "plugin/build_contact_search.sh")],
-            env=dict(os.environ, PYTHON=sys.executable),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
     native = ctypes.CDLL(str(library), mode=ctypes.RTLD_GLOBAL)
     if native.so101_install_contact_search() != 4:
         raise RuntimeError("Unexpected shared contact adapter version")
@@ -55,6 +46,13 @@ def environment_identity():
 
 def numbers(values):
     return " ".join(format(float(v), ".17g") for v in np.asarray(values).ravel())
+
+
+def camera_numbers(values):
+    """Keep camera-only floating-point noise out of portable model identities."""
+    return " ".join(
+        format(0.0 if abs(float(v)) < 1e-14 else float(v), ".12g") for v in np.asarray(values).ravel()
+    )
 
 
 def axes(position, target, up=(0.0, 0.0, 1.0)):
@@ -119,8 +117,8 @@ def apply_xml(root, assembled=False):
         world,
         "camera",
         name="workspace_camera",
-        pos=numbers(camera["position"]),
-        xyaxes=numbers(axes(camera["position"], camera["look_at"])),
+        pos=camera_numbers(camera["position"]),
+        xyaxes=camera_numbers(axes(camera["position"], camera["look_at"])),
         fovy=str(camera["fovy_degrees"]),
     )
     for side, mount in cfg["mounts"].items():
@@ -139,8 +137,8 @@ def apply_xml(root, assembled=False):
             gripper,
             "camera",
             name=side + "_wrist_view",
-            pos=numbers(eye),
-            xyaxes=numbers(axes(eye, target, rotation[:, 2])),
+            pos=camera_numbers(eye),
+            xyaxes=camera_numbers(axes(eye, target, rotation[:, 2])),
             fovy="75",
         )
     for actuator in root.find("actuator"):

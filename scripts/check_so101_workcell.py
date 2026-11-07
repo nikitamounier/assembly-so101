@@ -128,7 +128,7 @@ def main():
     d.qpos.copy()
     mujoco.mj_step(m, d, nstep=4000)
     settling = {}
-    for name in ("base", "motor", "horn", "screw", "retainer", "yoke", "driver"):
+    for name in ("base", "motor", "horn", "screw", "retainer", "yoke"):
         velocity = np.zeros(6)
         mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, m.body(name).id, velocity, 0)
         settling[name] = dict(

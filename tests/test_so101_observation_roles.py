@@ -30,13 +30,9 @@ def test_only_active_and_local_receivers(tables):
         assert MATING_BODIES[task] == expected[k]
         ids = tables.which[k].numpy()
         assert all(OBS_BODIES[i] == task for i in ids[:128])
-        assert {OBS_BODIES[i] for i in ids[128:]} == set(MATING_BODIES[task]) | (
-            set(("driver", "driver_trigger_saddle", "driver_forward", "driver_reverse", "driver_bit"))
-            if task == "screw"
-            else set()
-        )
+        assert {OBS_BODIES[i] for i in ids[128:]} == set(MATING_BODIES[task])
         assert len(ids) == 384
-        assert sum(OBS_BODIES[i].startswith("driver") for i in ids) == (128 if task == "screw" else 0)
+        assert sum(tables.mating_counts[task].values()) == 256
 
 
 def test_distal_finger_samples_exclude_palm(tables):
@@ -94,9 +90,8 @@ def test_area_budget_preserves_total_and_small_components():
     assert counts[0] > counts[1] > counts[2]
 
 
-def test_lower_coverage_preset_matches_tool_to_mating(tables):
+def test_lower_coverage_preset_keeps_full_mating_budget(tables):
     low = PointTables(ASSEMBLY_TASKS, n_fix=128)
     assert low.n_pts == 320 and tables.n_pts == 448
-    assert all(sum(c.values()) == (64 if t == "screw" else 128) for t, c in low.mating_counts.items())
-    assert sum(OBS_BODIES[i].startswith("driver") for i in low.which[2].tolist()) == 64
+    assert all(sum(c.values()) == 128 for c in low.mating_counts.values())
     assert low.signature != tables.signature

@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import multiprocessing
 import shutil
 import xml.etree.ElementTree as ET
 from concurrent.futures import ProcessPoolExecutor
@@ -37,8 +38,10 @@ def signature():
     files.update(
         (
             ROOT / "plugin/assemblenist_sdf.cc",
-            ROOT / "plugin/so101_driver.cc",
+            ROOT / "plugin/so101_screw_head.cc",
             ROOT / "plugin/so101_contact_search.c",
+            ROOT / "plugin/so101_surface_tree.h",
+            ROOT / "plugin/so101_grid_bounds.h",
         )
     )
     for path in sorted(files):
@@ -68,12 +71,10 @@ def validation_identity():
         "workcell.py",
         "collision.py",
         "gripper.py",
-        "tool.py",
-        "tool_geometry.py",
         "fit_geometry.py",
     )
     result = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in names}
-    for name in ("libassemblenist_sdf.so", "libso101_contact_search.so", "libso101_driver.so"):
+    for name in ("libassemblenist_sdf.so", "libso101_contact_search.so", "libso101_screw_head.so"):
         result["native:" + name] = hashlib.sha256((ROOT / "plugin/build" / name).read_bytes()).hexdigest()
     return result
 
@@ -245,7 +246,7 @@ def reset(m, task, seed):
     if distribution not in ("all_loose", "staged"):
         raise ValueError("Unknown reset distribution")
     previous = set() if distribution == "all_loose" else set(TASK_NAMES[: TASK_NAMES.index(task)])
-    for name in (*PARTS, "driver"):
+    for name in PARTS:
         q = m.jnt_qposadr[m.joint(name + "_free").id]
         if name == "base":
             d.qpos[q : q + 3] = base_pos
@@ -255,7 +256,7 @@ def reset(m, task, seed):
             d.qpos[q + 3 : q + 7] = base_q
         else:
             d.qpos[q : q + 2] += rng.uniform(-0.008, 0.008, 2)
-            # Keep the tool lying down; randomize only its table yaw.
+            # Preserve the initial part orientation; randomize only table yaw.
             angle = rng.uniform(-np.deg2rad(8), np.deg2rad(8))
             yaw = np.r_[np.cos(angle / 2), 0, 0, np.sin(angle / 2)]
             quat = np.empty(4)
@@ -341,7 +342,9 @@ def main():
         "coverage_note": "Independent all-loose tabletop starts for every task. Predecessor placements are not preassembled; held and near-insertion curricula are not generated.",
         "tasks": {},
     }
-    with ProcessPoolExecutor(max_workers=a.workers) as pool:
+    # signature() compiles MuJoCo before workers start. Forking its native
+    # thread state can deadlock on Linux, so each worker starts a fresh runtime.
+    with ProcessPoolExecutor(max_workers=a.workers, mp_context=multiprocessing.get_context("spawn")) as pool:
         for task in a.tasks.split("+"):
             report["tasks"][task] = {}
             for split, offset in [("train", 0), ("eval", 1000000)]:

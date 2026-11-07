@@ -1,13 +1,20 @@
 // MuJoCo 4.0: reserve mjMAXCONPAIR through the model option, then use
 // per-model search budgets inside the native collider. No preload/interposition.
 #include <math.h>
+#include <chrono>
+static thread_local bool profile_surface=false;
+static thread_local double surface_stats[7]={};
+extern "C" void so101_surface_stats(double* out, int reset) {
+  for(int i=0;i<7;++i) { out[i]=surface_stats[i]; if(reset) surface_stats[i]=0; }
+  profile_surface=true;
+}
 #include <string.h>
 #include <mujoco/mujoco.h>
 
 static mjfCollision original[mjNGEOMTYPES][mjNGEOMTYPES];
 static int installed;
 
-int assembly_contact_capacity_guard(void) { return 4; }
+extern "C" int assembly_contact_capacity_guard(void) { return 4; }
 
 static int finger(const char* name) {
   return name && (strstr(name, "wrist_roll_follower_so101_v1_collision_sdf") ||
@@ -26,6 +33,7 @@ static int free_object(const mjModel* m, int geom) {
 static void sample_surface(const mjModel* m, const mjData* d, int visual, int target,
                            const mjtNum point[3], int direction, mjtNum threshold,
                            mjPreContact bins[12]) {
+  if(profile_surface) surface_stats[4]++;
   mjtNum world[3], local[3], delta[3];
   mju_mulMatVec3(world, d->geom_xmat + 9*visual, point);
   mju_addTo3(world, d->geom_xpos + 3*visual);
@@ -65,6 +73,8 @@ static void sample_surface(const mjModel* m, const mjData* d, int visual, int ta
   }
 }
 
+#include "so101_surface_tree.h"
+
 static int supplement_mating_surfaces(const mjModel* m, mjData* d, mjPreContact* con,
                                   int g1, int g2, int count, mjtNum margin) {
   const char* a = mj_id2name(m, mjOBJ_GEOM, g1);
@@ -95,6 +105,10 @@ static int supplement_mating_surfaces(const mjModel* m, mjData* d, mjPreContact*
   for (int direction = 0; direction < 2; direction++) {
     int visual = (direction == 0) == forward ? second_visual : first_visual;
     int target = direction == 0 ? g1 : g2;
+    if (surface_mode != 0) {
+      tree_surface(m,d,visual,target,direction,threshold,bins);
+      continue;
+    }
     int mesh = m->geom_dataid[visual];
     int vertices = m->mesh_vertadr[mesh], faces = m->mesh_faceadr[mesh];
     for (int i = 0; i < m->mesh_vertnum[mesh]; i++) {
@@ -154,11 +168,19 @@ static int contact_search(const mjModel* m, mjData* d, mjPreContact* con,
   mjModel view = *m;  // Only local options change; shared arrays are read-only.
   view.opt.sdf_initpoints = (int)values[0];
   view.opt.sdf_iterations = (int)values[1];
+  auto begin = profile_surface ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
   int count = collider(&view, d, con, g1, g2, margin);
-  return supplement_mating_surfaces(m, d, con, g1, g2, count, margin);
+  auto middle = profile_surface ? std::chrono::steady_clock::now() : begin;
+  count = supplement_mating_surfaces(m, d, con, g1, g2, count, margin);
+  if(profile_surface) {
+    surface_stats[0]++;
+    surface_stats[1]+=std::chrono::duration<double>(middle-begin).count();
+    surface_stats[2]+=std::chrono::duration<double>(std::chrono::steady_clock::now()-middle).count();
+  }
+  return count;
 }
 
-int so101_install_contact_search(void) {
+extern "C" int so101_install_contact_search(void) {
   if (installed) return 4;
   for (int a = 0; a < mjNGEOMTYPES; ++a)
     for (int b = 0; b < mjNGEOMTYPES; ++b)

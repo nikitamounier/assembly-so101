@@ -1,13 +1,10 @@
-// Contact-operated screwdriver. No policy control channel or attachment constraint.
+// Nominal screw-head contact surface with crossed recess.
 #include <mujoco/mujoco.h>
 #include <mujoco/mjplugin.h>
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
 
 namespace {
-struct Driver { int forward_q, reverse_q, spindle_v; };
-const char* attrs[] = {"forward", "reverse", "spindle"};
 double box(const mjtNum* p, double hx, double hy, double hz, double cz) {
   double x=std::abs(p[0])-hx, y=std::abs(p[1])-hy, z=std::abs(p[2]-cz)-hz;
   return std::sqrt(std::pow(std::max(x,0.),2)+std::pow(std::max(y,0.),2)+std::pow(std::max(z,0.),2))
@@ -24,37 +21,7 @@ double head(const mjtNum* p) {
 }
 }
 
-mjPLUGIN_LIB_INIT(so101_driver) {
-  mjpPlugin p;
-  mjp_defaultPlugin(&p);
-  p.name = "so101.contact_driver";
-  p.capabilityflags = mjPLUGIN_PASSIVE;
-  p.needstage = mjSTAGE_VEL;
-  p.nattribute = 3;
-  p.attributes = attrs;
-  p.nstate = +[](const mjModel*, int) { return 0; };
-  p.init = +[](const mjModel* m, mjData* d, int instance) {
-    int j[3];
-    for (int i=0; i<3; ++i) {
-      j[i] = mj_name2id(m, mjOBJ_JOINT, mj_getPluginConfig(m, instance, attrs[i]));
-      if (j[i] < 0) return -1;
-    }
-    auto* v = new Driver{m->jnt_qposadr[j[0]], m->jnt_qposadr[j[1]], m->jnt_dofadr[j[2]]};
-    d->plugin_data[instance] = reinterpret_cast<uintptr_t>(v);
-    return 0;
-  };
-  p.destroy = +[](mjData* d, int i) { delete reinterpret_cast<Driver*>(d->plugin_data[i]); d->plugin_data[i]=0; };
-  p.reset = +[](const mjModel*, mjtNum*, void*, int) {};
-  p.compute = +[](const mjModel*, mjData* d, int i, int) {
-    const auto* v = reinterpret_cast<Driver*>(d->plugin_data[i]);
-    const bool f = d->qpos[v->forward_q] > .0006;
-    const bool r = d->qpos[v->reverse_q] > .0006;
-    if (f == r) return;  // neither pressed or conflicting commands
-    // Nominal low-torque setting; 250 rpm no-load. Dynamics need hardware identification.
-    const double target = (f ? 1 : -1) * 26.17993878;
-    d->qfrc_passive[v->spindle_v] += std::clamp(.002 * (target-d->qvel[v->spindle_v]), -.05, .05);
-  };
-  mjp_registerPlugin(&p);
+mjPLUGIN_LIB_INIT(so101_screw_head) {
   mjpPlugin h;
   mjp_defaultPlugin(&h);
   h.name="so101.screw_head";

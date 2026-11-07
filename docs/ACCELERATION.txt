@@ -1,0 +1,58 @@
+SO101 native rollout acceleration
+
+The shared SO101 model uses exact-sample hierarchical collision search and a
+sparse MuJoCo constraint Jacobian. The timestep, contact equations, solver
+iterations and tolerances are unchanged. Sparse arithmetic can produce small
+numerical differences. The exhaustive collision scan remains a parity oracle.
+
+Native implementation
+- plugin/so101_surface_tree.h caches immutable mesh samples and bounding trees
+  per thread/model, rejects separated groups and visits survivors in original
+  sample order. Compiled mesh arrays must remain immutable; the native cache
+  must be cleared with so101_surface_clear_cache on every affected thread if
+  they are edited.
+- plugin/so101_grid_bounds.h derives conservative rejection bounds from the
+  actual trilinear distance grid, including clamped/exterior queries.
+- plugin/so101_contact_search.c retains mode0 exhaustive, mode1 accelerated
+  (default), and mode2 cached-flat paths. SO101_SURFACE_MODE selects each thread's
+  initial mode; the exported mode setter affects the calling thread only.
+- assembly_policy/so101/native_build.py serializes concurrent builds, hashes
+  all native sources/headers/build scripts and outputs, and records checkout
+  and MuJoCo runtime paths. New inputs, missing/replaced binaries, or a copied
+  checkout force a full rebuild before plugins are loaded. Each process loads
+  one native build; restart it after editing sources.
+- The unhelpful native output-reduction experiment is excluded from production
+  sources and builds. MuJoCo's standard rollout retains per-substep safety data.
+
+Setup and qualification (from an editable source checkout, Python3.12+,
+C++17 compiler and existing hash-pinned assets_local installed)
+  python -m pip install -e '.[train,dev]'
+  bash scripts/so101_build_plugins.sh
+  python -m scripts.prepare_so101_workcell --count 32 --workers 2
+  python -m pytest tests/test_native_build.py tests/test_surface_acceleration.py tests/test_camera_portability.py
+  python -m scripts.so101_preflight --out artifacts_local/preflight.json
+
+Use the repository's existing asset setup instructions if local assets have not
+been installed. Native libraries, reset banks and reference files are generated,
+not versioned. Model signatures include both acceleration headers; changing
+physics sources requires a new versioned bank/reference, never relabel old data.
+Camera-only serialization is portable across ARM64/x86; physical transforms
+retain full precision. Reset generation uses fresh spawned worker processes.
+
+Component replay tools (local CPU measurement, not a distributed PPO result)
+  python -m scripts.performance.contact_replay --mode 0 --steps 80 --output artifacts_local/flat
+  python -m scripts.performance.contact_replay --mode 1 --steps 80 --inputs artifacts_local/flat/inputs.npz --output artifacts_local/tree
+  SO101_SURFACE_MODE=1 python -m scripts.performance.worker_replay --output artifacts_local/worker
+
+Full PPO evidence
+benchmarks/so101-acceleration-20261107.json records the matched 8192-environment,
+32-control-step comparison, two updates per variant on one H100 and 46 simulation
+CPUs. Iteration wall includes rollout, learning, logging and checkpoint saves;
+process initialization is outside iteration time. Dense flat/tree training
+metrics matched exactly. Sparse changes trajectories numerically; physical and
+reward regression gates were qualified separately. This is a throughput result,
+not evidence of learned assembly or long-run learning equivalence.
+
+Raw job scripts, receipts and frozen-run archives remain outside production code
+under ignored artifacts_local/ and the operational/ research workspace. Cluster
+copies are isolated snapshots: local cleanup does not alter any running job.

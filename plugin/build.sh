@@ -10,10 +10,10 @@ cd "$(dirname "$0")"
 MJ=${MUJOCO_DIR:-$("${PYTHON:-python}" -c "import mujoco, os; print(os.path.dirname(mujoco.__file__))")}
 if [[ "$(uname -s)" == Darwin ]]; then
   LIB=$(find "$MJ" -name 'libmujoco*.dylib' -print -quit)
-  TASK_LINK=(-dynamiclib)
+  TASK_LINK=(-dynamiclib -Wl,-install_name,@rpath/libassemblenist_sdf.so)
 else
   LIB=$(find "$MJ" -maxdepth 1 -name 'libmujoco.so*' -print -quit)
-  TASK_LINK=(-shared -fPIC)
+  TASK_LINK=(-shared -fPIC -Wl,-soname,libassemblenist_sdf.so)
 fi
 TASK_ARCH=(-fPIC)
 case "$(uname -m)" in x86_64|amd64) TASK_ARCH+=(-mf16c);; esac

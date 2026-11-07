@@ -8,6 +8,7 @@ and post-reset observations. The bank, sampler, policy and learner stay on the l
 remote run is the same algorithm as a local one (vecenv.LocalVecEnv). Messages are pickled numpy
 arrays over multiprocessing.connection, authenticated with a per-run key.
 """
+
 from __future__ import annotations
 
 import json
@@ -16,15 +17,16 @@ import secrets
 import selectors
 import socket
 import time
-from multiprocessing.connection import Client, Listener, wait
+from multiprocessing.connection import AuthenticationError, Listener, wait
 from pathlib import Path
 
 import numpy as np
 
-from ..sim.env import HISTORY, PROPRIO_DIM, BatchedAssemblyEnv, EnvConfig
+from ..so101.env import HISTORY, PROPRIO_DIM, BatchedAssemblyEnv, EnvConfig
+from .transport import TLSListener, connect
 from .vecenv import INFO_KEYS, OBS_KEYS
 
-PROTO = 2   # 2: workers send only the newest proprio frame; the learner keeps the 5-frame history
+PROTO = 2  # 2: workers send only the newest proprio frame; the learner keeps the 5-frame history
 
 
 def _pack(o, proto, ids=None):
@@ -33,7 +35,8 @@ def _pack(o, proto, ids=None):
     sel = (lambda x: x) if ids is None else (lambda x: x[ids])
     d = {k: sel(o[k]) for k in OBS_KEYS if k != "proprio"}
     if proto >= 2:
-        d["frame"] = np.ascontiguousarray(sel(o["proprio"])[:, -PROPRIO_DIM:])
+        frame_dim = o["proprio"].shape[1] // HISTORY
+        d["frame"] = np.ascontiguousarray(sel(o["proprio"])[:, -frame_dim:])
     else:
         d["proprio"] = sel(o["proprio"])
     return d
@@ -59,8 +62,29 @@ class RemoteVecEnv:
     given an inactive slice with fresh reset states. Inactive environments return zero reward,
     done=False and info["valid"]=False, so the trainer masks their transitions out of PPO."""
 
-    def __init__(self, run_dir, task_names, n_envs, ecfg: EnvConfig, provider, n_conns, t0=None, port=0,
-                 accept_timeout=600.0, min_frac=0.5, task_cost=None, init_wait=60.0, entry_key=None, n_keys=None):
+    def __init__(
+        self,
+        run_dir,
+        task_names,
+        n_envs,
+        ecfg: EnvConfig,
+        provider,
+        n_conns,
+        t0=None,
+        port=0,
+        accept_timeout=600.0,
+        min_frac=0.5,
+        task_cost=None,
+        init_wait=60.0,
+        entry_key=None,
+        n_keys=None,
+        bind_host="127.0.0.1",
+        advertise_host=None,
+        tls_cert=None,
+        tls_key=None,
+        trusted_network=False,
+        model_signature=None,
+    ):
         self.N, self.provider, self.task_names = n_envs, provider, list(task_names)
         self.ecfg = ecfg
         # load balancing works on cost keys: the task, or (task, reset family) when entry_key maps every reset
@@ -68,20 +92,60 @@ class RemoteVecEnv:
         tc = np.ones(len(task_names)) if task_cost is None else np.asarray(task_cost, dtype=float)
         self.entry_key = None if entry_key is None else np.asarray(entry_key, dtype=np.int64)
         T = len(task_names) if entry_key is None else int(n_keys)
-        self.cost = tc[np.arange(T) * len(task_names) // T]      # prior; keys are task-major
+        self.cost = tc[np.arange(T) * len(task_names) // T]  # prior; keys are task-major
         self.cost_prior = self.cost.copy()
         # online cost model (_learn_cost): decayed normal equations, fitted flag
-        self._cA, self._cb, self._cy, self._cp, self._csteps, self._cfit = np.zeros((T, T)), np.zeros(T), 0.0, 0.0, 0, False
+        self._cA, self._cb, self._cy, self._cp, self._csteps, self._cfit = (
+            np.zeros((T, T)),
+            np.zeros(T),
+            0.0,
+            0.0,
+            0,
+            False,
+        )
         self.horizon = int(round(ecfg.horizon_s / ecfg.control_dt))
-        key = secrets.token_bytes(16)
-        self.listener = Listener((socket.gethostbyname(socket.gethostname()), port), backlog=n_conns + 64,
-                                 authkey=key)
+        if n_conns < 1 or n_conns > n_envs:
+            raise ValueError("Worker count must be between one and the environment count")
+        if not 0 < min_frac <= 1 or accept_timeout < 0:
+            raise ValueError("Invalid worker admission settings")
+        if bool(tls_cert) != bool(tls_key):
+            raise ValueError("TLS certificate and key must be supplied together")
+        if bind_host not in ("127.0.0.1", "localhost", "::1") and not tls_cert and not trusted_network:
+            raise ValueError("Nonlocal listeners require TLS or an explicit trusted network")
+        self.model_signature = model_signature
+        run = Path(run_dir)
+        run.mkdir(parents=True, exist_ok=True)
+        key_path = run / "worker-auth.key"
+        try:
+            fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            key = bytes.fromhex(key_path.read_text())
+        else:
+            key = secrets.token_bytes(32)
+            with os.fdopen(fd, "w") as stream:
+                stream.write(key.hex())
+        address = (bind_host, port)
+        self.listener = (
+            TLSListener(address, authkey=key, certfile=tls_cert, keyfile=tls_key, backlog=n_conns + 64)
+            if tls_cert
+            else Listener(address, backlog=n_conns + 64, authkey=key)
+        )
         addr = self.listener.address
-        Path(run_dir).mkdir(parents=True, exist_ok=True)
-        info = json.dumps(dict(host=addr[0], port=addr[1], key=key.hex(), n_conns=n_conns, time=time.time()))
-        tmp = Path(run_dir) / "server.json.tmp"
-        tmp.write_text(info)
-        os.replace(tmp, Path(run_dir) / "server.json")
+        info = dict(
+            host=advertise_host or addr[0],
+            port=addr[1],
+            key=key.hex(),
+            n_conns=n_conns,
+            time=time.time(),
+            trusted_network=trusted_network,
+        )
+        if tls_cert:
+            info["tls_ca"] = Path(tls_cert).read_text()
+        tmp = run / "server.json.tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as stream:
+            json.dump(info, stream)
+        os.replace(tmp, run / "server.json")
         print(f"[remote] listening on {addr}; waiting for {n_conns} worker connections", flush=True)
         conns, start = [], time.time()
         self._sock = self.listener._listener._socket
@@ -93,10 +157,12 @@ class RemoteVecEnv:
                 if time.time() - start > accept_timeout and len(conns) >= max(1, int(min_frac * n_conns)):
                     break
                 continue
-            except (OSError, EOFError):  # handshake failed: ignore this client
+            except (OSError, EOFError, AuthenticationError):  # handshake failed: ignore this client
                 continue
             if len(conns) % 16 == 0:
-                print(f"[remote] {len(conns)}/{n_conns} connected after {time.time()-start:.0f}s", flush=True)
+                print(
+                    f"[remote] {len(conns)}/{n_conns} connected after {time.time() - start:.0f}s", flush=True
+                )
         # slices are fixed by the target connection count; the listener stays open for late/replacement workers
         bounds = np.linspace(0, n_envs, n_conns + 1).astype(int)
         self.slices = [slice(bounds[i], bounds[i + 1]) for i in range(n_conns)]
@@ -105,7 +171,7 @@ class RemoteVecEnv:
         # ahead (balancing current + next made the two layers anti-correlated: a slice running expensive
         # episodes was given cheap next ones, then expensive ones again)
         self.load = np.zeros(n_conns)
-        self.speed = np.ones(n_conns)   # per-worker time per unit cost relative to the median worker
+        self.speed = np.ones(n_conns)  # per-worker time per unit cost relative to the median worker
         slots = np.arange(n_envs)
         self.entry, cur_s, cur_t = self._balanced(slots, *provider(n_envs))
         self.cur_task, self.cur_key = cur_t.copy(), self._key(self.entry, cur_t)
@@ -114,13 +180,13 @@ class RemoteVecEnv:
         self.load[:] = 0.0
         np.add.at(self.load, self.worker_of, self.cost[self.next_key])
         self.t0 = np.zeros(n_envs, dtype=np.int64) if t0 is None else np.asarray(t0)
-        self.conn_of = [None] * n_conns           # slice -> live connection
-        self.slice_of = {}                         # connection -> slice
+        self.conn_of = [None] * n_conns  # slice -> live connection
+        self.slice_of = {}  # connection -> slice
         self.hosts = [""] * n_conns
         self.alive = np.zeros(n_envs, bool)
-        self.hist = np.zeros((n_envs, HISTORY, PROPRIO_DIM), np.float32)   # protocol-2 proprio histories
-        self.pending = {}                          # connection -> slice, waiting for its hello/obs
-        self.sel = selectors.DefaultSelector()     # persistent poller over active connections
+        self.hist = np.zeros((n_envs, HISTORY, getattr(ecfg, "proprio_dim", PROPRIO_DIM)), np.float32)
+        self.pending = {}  # connection -> slice, waiting for its hello/obs
+        self.sel = selectors.DefaultSelector()  # persistent poller over active connections
         self._obs = None
         for i, c in enumerate(conns):
             self._send_init(i, c, cur_s[self.slices[i]], cur_t[self.slices[i]], fresh=False)
@@ -134,9 +200,12 @@ class RemoteVecEnv:
         for h in self.hosts:
             if h:
                 hosts[h] = hosts.get(h, 0) + 1
-        print(f"[remote] {int(sum(c is not None for c in self.conn_of))}/{n_conns} workers ready in {time.time()-start:.0f}s "
-              f"({len(self.pending)} still initializing, join later) from {len(hosts)} hosts; "
-              f"{int(self.alive.sum())}/{n_envs} envs active", flush=True)
+        print(
+            f"[remote] {int(sum(c is not None for c in self.conn_of))}/{n_conns} workers ready in {time.time() - start:.0f}s "
+            f"({len(self.pending)} still initializing, join later) from {len(hosts)} hosts; "
+            f"{int(self.alive.sum())}/{n_envs} envs active",
+            flush=True,
+        )
         self._sock.settimeout(1.0)
         self._pending_replace = [None] * n_conns
         self.reset_profile()
@@ -161,8 +230,20 @@ class RemoteVecEnv:
         try:
             # only non-default settings: workers staged with older code (fewer EnvConfig fields) stay compatible
             ecfg = {k: v for k, v in vars(self.ecfg).items() if v != getattr(EnvConfig, k, None)}
-            c.send(dict(cmd="init", tasks=self.task_names, ecfg=ecfg, state=cur_s, task=cur_t,
-                        next_state=self.next_state[sl], next_task=self.next_task[sl], t=t0, proto=PROTO))
+            c.send(
+                dict(
+                    cmd="init",
+                    tasks=self.task_names,
+                    ecfg=ecfg,
+                    state=cur_s,
+                    task=cur_t,
+                    next_state=self.next_state[sl],
+                    next_task=self.next_task[sl],
+                    t=t0,
+                    proto=PROTO,
+                    model_signature=self.model_signature,
+                )
+            )
         except (OSError, EOFError):
             c.close()
             return
@@ -176,7 +257,8 @@ class RemoteVecEnv:
             info = c.recv()
             obs = c.recv()
         except (OSError, EOFError):
-            self.pending.pop(c, None); c.close()
+            self.pending.pop(c, None)
+            c.close()
             return False
         self.pending.pop(c, None)
         sl = self.slices[i]
@@ -206,24 +288,28 @@ class RemoteVecEnv:
             self.slice_of.pop(c, None)
         self.conn_of[i] = None
         self.alive[self.slices[i]] = False
-        print(f"[remote] worker for slice {i} ({self.hosts[i]}) lost{': ' + why if why else ''}; "
-              f"{int(self.alive.sum())}/{self.N} envs active", flush=True)
+        print(
+            f"[remote] worker for slice {i} ({self.hosts[i]}) lost{': ' + why if why else ''}; "
+            f"{int(self.alive.sum())}/{self.N} envs active",
+            flush=True,
+        )
 
     def _accept_new(self):
         """Non-blocking: accept late or replacement workers and give each an inactive slice."""
         import select
+
         while True:
             r, _, _ = select.select([self._sock], [], [], 0)
             if not r:
                 return
             try:
                 c = _nodelay(self.listener.accept())
-            except (OSError, EOFError, socket.timeout):
+            except (OSError, EOFError, socket.timeout, AuthenticationError):
                 return
             busy = set(self.pending.values())
             free = [i for i in range(len(self.slices)) if self.conn_of[i] is None and i not in busy]
             if not free:
-                c.close()          # surplus worker: it retries this learner every few minutes (worker_main)
+                c.close()  # surplus worker: it retries this learner every few minutes (worker_main)
                 continue
             self._send_init(free[0], c, None, None, fresh=True)
             print(f"[remote] worker joining slice {free[0]}", flush=True)
@@ -246,8 +332,9 @@ class RemoteVecEnv:
         if k > 4096:  # initial fill of all slots: deal entries in decreasing cost, snake order over workers
             W = len(self.load)
             order = np.argsort(-cost, kind="stable")
-            ranks = np.arange(k); rnd, pos = ranks // W, ranks % W
-            wk = np.where(rnd % 2 == 0, pos, W - 1 - pos)            # worker for the j-th most expensive draw
+            ranks = np.arange(k)
+            rnd, pos = ranks // W, ranks % W
+            wk = np.where(rnd % 2 == 0, pos, W - 1 - pos)  # worker for the j-th most expensive draw
             free = {w: list(slots[self.worker_of[slots] == w]) for w in range(W)}
             out = np.empty(k, dtype=np.int64)
             spill = []
@@ -268,7 +355,7 @@ class RemoteVecEnv:
         out = np.empty(k, dtype=np.int64)
         for j in order:  # k is a few per step (one per finished episode)
             w = self.worker_of[free]
-            pick = int(np.argmin((self.load[w] + cost[j]) * self.speed[w]))   # earliest finish on uneven nodes
+            pick = int(np.argmin((self.load[w] + cost[j]) * self.speed[w]))  # earliest finish on uneven nodes
             out[j] = pick_slot = free.pop(pick)
             self.load[self.worker_of[pick_slot]] += cost[j]
         inv = np.empty(k, dtype=np.int64)  # slot order -> draw index
@@ -283,13 +370,16 @@ class RemoteVecEnv:
         if not got:
             return
         T = len(self.cost)
-        idx = np.array([i for i, _ in got]); y = 1000.0 * np.array([ct for _, ct in got])
+        idx = np.array([i for i, _ in got])
+        y = 1000.0 * np.array([ct for _, ct in got])
         X = np.zeros((len(self.slices), T))
         np.add.at(X, (self.worker_of, self.cur_key), 1.0)
         X = X[idx]
-        ys, g = y / self.speed[idx], 0.998          # memory ~500 steps
-        self._cA = g * self._cA + X.T @ X; self._cb = g * self._cb + X.T @ ys
-        self._cy = g * self._cy + ys.sum(); self._cp = g * self._cp + (X @ self.cost_prior).sum()
+        ys, g = y / self.speed[idx], 0.998  # memory ~500 steps
+        self._cA = g * self._cA + X.T @ X
+        self._cb = g * self._cb + X.T @ ys
+        self._cy = g * self._cy + ys.sum()
+        self._cp = g * self._cp + (X @ self.cost_prior).sum()
         self._csteps += 1
         if self._csteps % 32 == 0:
             prior = self.cost_prior * self._cy / max(self._cp, 1e-9)
@@ -307,8 +397,14 @@ class RemoteVecEnv:
                 self.speed /= np.median(self.speed[live])
 
     def reset_profile(self):
-        self.prof = dict(wall=[], ct_mean=[], ct_max=[], ct_sum=np.zeros(len(self.slices)), ct_n=np.zeros(len(self.slices)),
-                         active=[])
+        self.prof = dict(
+            wall=[],
+            ct_mean=[],
+            ct_max=[],
+            ct_sum=np.zeros(len(self.slices)),
+            ct_n=np.zeros(len(self.slices)),
+            active=[],
+        )
 
     def profile(self):
         """Per-step learner round-trip times vs. worker compute times since the last call (ms)."""
@@ -319,14 +415,22 @@ class RemoteVecEnv:
         slow = int(np.argmax(p["ct_sum"]))
         # per-worker mean step time: persistent stragglers (max close to ct_max) vs. per-step spikes (max << ct_max)
         cw = 1000 * p["ct_sum"][p["ct_n"] > 0] / p["ct_n"][p["ct_n"] > 0]
-        X = np.zeros(len(self.task_names)); np.add.at(X, self.cur_task[self.slices[slow]], 1.0)
-        out = dict(rt_med=float(np.median(w)), rt_p90=float(np.percentile(w, 90)), rt_max=float(w.max()),
-                   ct_mean=1000 * float(np.nanmean(p["ct_mean"])), ct_max=1000 * float(np.nanmean(p["ct_max"])),
-                   slow_host=self.hosts[slow], active_envs=float(np.mean(p["active"])),
-                   task_cost=[round(float(c), 1) for c in self.cost],
-                   ct_w=[round(float(np.percentile(cw, q)), 1) for q in (50, 90, 99, 100)] if len(cw) else None,
-                   slow_tasks={self.task_names[t]: int(n) for t, n in enumerate(X) if n}, slow_speed=float(self.speed[slow]),
-                   speed_max=float(self.speed[[c is not None for c in self.conn_of]].max(initial=0.0)))
+        X = np.zeros(len(self.task_names))
+        np.add.at(X, self.cur_task[self.slices[slow]], 1.0)
+        out = dict(
+            rt_med=float(np.median(w)),
+            rt_p90=float(np.percentile(w, 90)),
+            rt_max=float(w.max()),
+            ct_mean=1000 * float(np.nanmean(p["ct_mean"])),
+            ct_max=1000 * float(np.nanmean(p["ct_max"])),
+            slow_host=self.hosts[slow],
+            active_envs=float(np.mean(p["active"])),
+            task_cost=[round(float(c), 1) for c in self.cost],
+            ct_w=[round(float(np.percentile(cw, q)), 1) for q in (50, 90, 99, 100)] if len(cw) else None,
+            slow_tasks={self.task_names[t]: int(n) for t, n in enumerate(X) if n},
+            slow_speed=float(self.speed[slow]),
+            speed_max=float(self.speed[[c is not None for c in self.conn_of]].max(initial=0.0)),
+        )
         self.reset_profile()
         return out
 
@@ -341,14 +445,18 @@ class RemoteVecEnv:
         sent = []
         for i in live:
             try:
-                self.conn_of[i].send(dict(cmd="step", action=action[self.slices[i]], replace=self._pending_replace[i]))
+                self.conn_of[i].send(
+                    dict(cmd="step", action=action[self.slices[i]], replace=self._pending_replace[i])
+                )
                 sent.append(i)
             except (OSError, EOFError) as e:
                 self._drop(i, repr(e))
         self._pending_replace = [None] * len(self.slices)
         t0 = time.perf_counter()
         N = self.N
-        reward = np.zeros(N, np.float32); done = np.zeros(N, bool); ep_len = np.zeros(N, np.int64)
+        reward = np.zeros(N, np.float32)
+        done = np.zeros(N, bool)
+        ep_len = np.zeros(N, np.int64)
         info = {k: np.zeros(N, dtype=np.float64 if k in ("d_asm", "cost") else bool) for k in INFO_KEYS}
         final_parts, res, cts, got = [], set(), [], []
         expected = set(sent)
@@ -379,7 +487,7 @@ class RemoteVecEnv:
                         fh = np.concatenate([prev[dl, 1:], fin["frame"][:, None, :]], 1)
                         fin = {**fin, "proprio": fh.reshape(len(dl), -1)}
                     new = np.concatenate([prev[:, 1:], o["frame"][:, None, :]], 1)
-                    new[d] = o["frame"][d][:, None, :]          # auto-reset envs start a new history
+                    new[d] = o["frame"][d][:, None, :]  # auto-reset envs start a new history
                     self.hist[sl] = new
                     o = {**o, "proprio": new.reshape(len(new), -1)}
                 for k in OBS_KEYS:
@@ -389,14 +497,19 @@ class RemoteVecEnv:
                     info[k][sl] = r[k]
                 if fin is not None:
                     final_parts.append((sl.start + np.nonzero(r["done"])[0], {k: fin[k] for k in OBS_KEYS}))
-                ct = r.get("ct", np.nan); cts.append(ct); got.append((i, ct)); self.prof["ct_sum"][i] += ct
+                ct = r.get("ct", np.nan)
+                cts.append(ct)
+                got.append((i, ct))
+                self.prof["ct_sum"][i] += ct
                 self.prof["ct_n"][i] += 1
         ct = np.array(cts) if cts else np.array([np.nan])
         self._learn_cost(got)
-        self.prof["wall"].append(time.perf_counter() - t0); self.prof["ct_mean"].append(np.nanmean(ct))
-        self.prof["ct_max"].append(np.nanmax(ct)); self.prof["active"].append(int(self.alive.sum()))
+        self.prof["wall"].append(time.perf_counter() - t0)
+        self.prof["ct_mean"].append(np.nanmean(ct))
+        self.prof["ct_max"].append(np.nanmax(ct))
+        self.prof["active"].append(int(self.alive.sum()))
         info["ep_len"] = ep_len
-        info["valid"] = alive_before & self.alive        # transitions of envs whose worker died are dropped
+        info["valid"] = alive_before & self.alive  # transitions of envs whose worker died are dropped
         ids = np.nonzero(done)[0]
         final_obs = None
         finished = self.entry[ids].copy()
@@ -405,7 +518,9 @@ class RemoteVecEnv:
             order = np.concatenate([p[0] for p in final_parts])
             final_obs = {k: np.concatenate([p[1][k] for p in final_parts]) for k in OBS_KEYS}
             assert np.array_equal(order, ids)
-            np.subtract.at(self.load, self.worker_of[ids], self.cost[self.next_key[ids]])   # next becomes current
+            np.subtract.at(
+                self.load, self.worker_of[ids], self.cost[self.next_key[ids]]
+            )  # next becomes current
             self.cur_task[ids], self.cur_key[ids] = self.next_task[ids], self.next_key[ids]
             self.entry[ids] = self.next_entry[ids]
             e, s, t = self._balanced(ids, *self.provider(len(ids), finished, info["success"][ids]))
@@ -442,9 +557,15 @@ def _serve(conn, nthread):
         init = conn.recv()
     except (EOFError, OSError) as e:
         raise _NoSlice() from e
-    ecfg = EnvConfig(**{**init["ecfg"], "nthread": nthread})
+    config_type, env_type = EnvConfig, BatchedAssemblyEnv
+    ecfg = config_type(**{**init["ecfg"], "nthread": nthread})
+    if init.get("model_signature"):
+        from ..so101.resets import signature
+
+        if signature() != init["model_signature"]:
+            raise ValueError("Worker geometry/source differs from the learner")
     n = len(init["state"])
-    env = BatchedAssemblyEnv(init["tasks"], np.zeros(n, dtype=np.int64), ecfg)
+    env = env_type(init["tasks"], np.zeros(n, dtype=np.int64), ecfg)
     env.set_states(np.arange(n), init["state"], init["task"])
     env.t[:] = init["t"]
     nxt_s, nxt_t = init["next_state"].copy(), init["next_task"].copy()
@@ -470,22 +591,31 @@ def _serve(conn, nthread):
         if len(ids):
             final = _pack(env.observe(), proto, ids)
             env.set_states(ids, nxt_s[ids], nxt_t[ids])
-        conn.send(dict(reward=r, done=done, obs=_pack(env.observe(), proto), final=final, ep_len=ep_len,
-                       ct=time.perf_counter() - t0, **{k: info[k] for k in INFO_KEYS}))
+        conn.send(
+            dict(
+                reward=r,
+                done=done,
+                obs=_pack(env.observe(), proto),
+                final=final,
+                ep_len=ep_len,
+                ct=time.perf_counter() - t0,
+                **{k: info[k] for k in INFO_KEYS},
+            )
+        )
     env.close()
 
 
-def worker_main(run_dir, nthread, wait_s=7200, poll_s=30.0):
+def worker_main(run_dir, nthread, wait_s=7200, poll_s=1.0, *, ticket=None):
     """Serve learners at run_dir until none appears for wait_s; reconnects after learner restarts."""
-    path, last = Path(run_dir) / "server.json", None
+    path, last = (Path(run_dir) / "server.json" if run_dir else None), None
     while True:
         t0, conn, fail_since = time.time(), None, None
         while conn is None:
-            if path.exists():
-                info = json.loads(path.read_text())
+            if ticket is not None or (path is not None and path.exists()):
+                info = ticket if ticket is not None else json.loads(path.read_text())
                 if info["time"] != last:
                     try:
-                        conn = _nodelay(Client((info["host"], info["port"]), authkey=bytes.fromhex(info["key"])))
+                        conn = _nodelay(connect(info))
                         last = info["time"]
                         break
                     except Exception as e:  # refused / timed out / handshake interrupted: retry
@@ -493,7 +623,10 @@ def worker_main(run_dir, nthread, wait_s=7200, poll_s=30.0):
                             fail_since = time.time()
                             print(f"[worker] connect failed ({e!r}); retrying", flush=True)
                         if time.time() - fail_since > 300:  # learner already started without us (or is gone):
-                            print(f"[worker] giving up on learner {info['time']}; waiting for a new one", flush=True)
+                            print(
+                                f"[worker] giving up on learner {info['time']}; waiting for a new one",
+                                flush=True,
+                            )
                             last, fail_since = info["time"], None
                             continue
                         time.sleep(1 + 4 * np.random.random())
@@ -504,7 +637,9 @@ def worker_main(run_dir, nthread, wait_s=7200, poll_s=30.0):
             time.sleep(poll_s)
         try:
             _serve(conn, nthread)
-        except _NoSlice:  # surplus: retry the same learner later (a slice frees up when another worker's job ends)
+        except (
+            _NoSlice
+        ):  # surplus: retry the same learner later (a slice frees up when another worker's job ends)
             print("[worker] no free slice; retrying in ~2 min", flush=True)
             last = None
             time.sleep(90 + 60 * np.random.random())
@@ -512,14 +647,20 @@ def worker_main(run_dir, nthread, wait_s=7200, poll_s=30.0):
             print(f"[worker] learner connection lost ({e!r})", flush=True)
         finally:
             conn.close()
+            last = None
 
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run-dir", required=True)
+    endpoint = ap.add_mutually_exclusive_group(required=True)
+    endpoint.add_argument("--run-dir")
+    endpoint.add_argument("--ticket", type=Path)
     ap.add_argument("--nthread", type=int, default=1)
-    ap.add_argument("--poll", type=float, default=30.0)
+    ap.add_argument("--poll", type=float, default=1.0)
     ap.add_argument("--wait", type=float, default=7200.0)
     a = ap.parse_args()
-    worker_main(a.run_dir, a.nthread, a.wait, a.poll)
+    worker_main(
+        a.run_dir, a.nthread, a.wait, a.poll, ticket=json.loads(a.ticket.read_text()) if a.ticket else None
+    )

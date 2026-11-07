@@ -3,12 +3,36 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "assemblenist"
+name = "assembly-so101"
 version = "0.1.0"
-description = "AssembleNIST: one RL policy for all 20 NIST board assemblies, trained from binary rewards in MuJoCo"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = ["mujoco>=3.3", "torch>=2.1", "numpy", "scipy", "imageio[ffmpeg]", "pillow", "matplotlib"]
+description = "Native SO-101 assembly learning with PPO and Success Guided Sampling"
+requires-python = ">=3.12"
+dependencies = ["mujoco==3.17.0", "numpy==2.5.4", "scipy==1.18.1", "trimesh==5.2.0", "libigl==2.6.3", "psutil==7.2.2"]
+
+[project.optional-dependencies]
+train = ["torch>=2.11,<3", "imageio[ffmpeg]>=2.38", "pillow>=13", "matplotlib>=3.11"]
+assets = ["rhino3dm==8.35.0", "open3d==0.20.0"]
+modal = ["modal==1.6.3"]
+sail = ["sail==0.17.2"]
+dev = ["pytest>=9", "ruff>=0.17"]
+
+[project.scripts]
+so101-train = "assembly_policy.train:main"
+so101-compute = "assembly_policy.compute.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["assembly_policy*"]
+include = ["assembly_policy*", "scripts*"]
+
+[tool.ruff]
+line-length = 110
+extend-exclude = ["assembly_policy/rl/nets.py", "assembly_policy/rl/sampler.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["E731"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**/*.py" = ["E402"]

@@ -22,7 +22,9 @@
 #include <unordered_map>
 #include <vector>
 
+#if defined(__F16C__)
 #include <immintrin.h>
+#endif
 
 #include <mujoco/mjplugin.h>
 #include <mujoco/mujoco.h>
@@ -173,9 +175,14 @@ std::mutex g_mu;
 std::unordered_map<int, std::unique_ptr<Grid>> g_grids;
 
 const Grid* get_grid(int id) {
+  // Grids are immutable and owned by g_grids for the library lifetime. Cache
+  // pointers per rollout thread so repeated distance queries need no shared lock.
+  thread_local std::unordered_map<int, const Grid*> cached;
+  auto local = cached.find(id);
+  if (local != cached.end()) return local->second;
   std::lock_guard<std::mutex> lock(g_mu);
   auto it = g_grids.find(id);
-  if (it != g_grids.end()) return it->second.get();
+  if (it != g_grids.end()) return cached[id] = it->second.get();
   const char* env = std::getenv("ASSEMBLENIST_SDF_DIR");
   std::string path = std::string(env && *env ? env : ASSEMBLENIST_SDF_DIR) + "/grid_" + std::to_string(id) + ".bin";
   std::ifstream f(path, std::ios::binary);
@@ -190,10 +197,20 @@ const Grid* get_grid(int id) {
   }
   const Grid* ptr = g.get();
   g_grids[id] = std::move(g);
-  return ptr;
+  return cached[id] = ptr;
 }
 
-inline float h2f(uint16_t x) { return _cvtsh_ss(x); }
+inline float h2f(uint16_t x) {
+#if defined(__F16C__)
+  return _cvtsh_ss(x);
+#elif defined(__aarch64__)
+  __fp16 value;
+  std::memcpy(&value, &x, sizeof(x));
+  return static_cast<float>(value);
+#else
+#error "SDF grids require x86 F16C or ARM64 half-precision conversion"
+#endif
+}
 
 double grid_eval(const mjtNum p[3], const Grid* G, mjtNum* grad) {
   const double h = G->h;

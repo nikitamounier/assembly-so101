@@ -1,0 +1,20 @@
+Assembly SO-101
+
+Based on AssembleNIST by Tao Sun, MIT licensed.
+https://github.com/suniique/assembly-nist
+Preserve LICENSE, CITATION.bib and CITATION.cff.
+
+MuJoCo: Google DeepMind, Apache-2.0, used as a dependency.
+SO-101 helper model: TheRobotStudio/SO-ARM100, revision
+a758567c3978dfeefe282ede0500085a48fe8f78. Model geometry derives from
+Onshape exports; motor properties reference apirrone/Open_Duck_Mini.
+The helper assets are Apache-2.0 licensed; see licenses/SO-ARM100.LICENSE.
+Hiwonder derived assembly geometry: hash-pinned vendor CAD input
+f675f6049f94206c7b74ab73c40485913916babff1a6f4fc145dc9040672a2f8.
+Original vendor CAD is not included. Asset availability does not grant
+additional redistribution rights; preserve upstream asset terms.
+
+Learning design references AlphaNIST, Success Guided Sampling and SimBa.
+See CITATION.bib for the research citations. This software is independent
+of those research teams. Native contact approximations require hardware
+calibration; numerical qualification does not establish learned assembly.

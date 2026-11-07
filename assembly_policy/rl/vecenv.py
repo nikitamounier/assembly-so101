@@ -10,22 +10,23 @@ the previous step's outcomes were recorded; on termination the env resets to it 
 LocalVecEnv runs BatchedAssemblyEnv in-process. RemoteVecEnv runs slices on worker processes or
 jobs (one TCP round trip per control step), see remote.py.
 """
+
 from __future__ import annotations
 
 import numpy as np
 
-from ..sim.env import BatchedAssemblyEnv, EnvConfig
+from ..so101.env import BatchedAssemblyEnv, EnvConfig
 
 OBS_KEYS = ("proprio", "task", "tcp_p", "tcp_R", "part_p", "part_q", "finger")
 INFO_KEYS = ("success", "safety", "timeout", "d_asm", "cost", "unstable")
 
 
 class LocalVecEnv:
-    def __init__(self, task_names, n_envs, ecfg: EnvConfig, provider, t0=None):
+    def __init__(self, task_names, n_envs, ecfg: EnvConfig, provider, t0=None, env_type=None):
         # provider(k, finished_entries=None, outcomes=None) -> (entries, states, tasks); it records the
         # finished episodes' outcomes in the sampler before drawing k new entries.
         self.provider = provider
-        self.env = BatchedAssemblyEnv(task_names, np.zeros(n_envs, dtype=np.int64), ecfg)
+        self.env = (env_type or BatchedAssemblyEnv)(task_names, np.zeros(n_envs, dtype=np.int64), ecfg)
         self.N, self.horizon = n_envs, self.env.horizon
         e, s, t = provider(n_envs)
         self.entry = e

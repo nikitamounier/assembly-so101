@@ -56,6 +56,11 @@ class PolicyPointCloud:
             dtype="float32",
             frame="left_gripper",
             scale=10,
+            frame_pose_world=dict(
+                position=grip_p[0].tolist(),
+                rotation_row_major=grip_r[0].reshape(-1).tolist(),
+                rotation=grip_r[0].tolist(),
+            ),
             units="metres × 10",
             points=tensor.reshape(-1, 3).tolist(),
             flat=tensor.tolist(),

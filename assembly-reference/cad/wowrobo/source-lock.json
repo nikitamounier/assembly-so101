@@ -1,0 +1,65 @@
+{
+  "revision": "a758567c3978dfeefe282ede0500085a48fe8f78",
+  "files": [
+    {
+      "path": "STEP/SO101/SO101 Assembly.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/SO101%20Assembly.step",
+      "sha256": "f754be35708382b05ce65768ae33c612f91dca11ad19d14807dc637eb944ba3d",
+      "bytes": 20496014
+    },
+    {
+      "path": "STEP/SO101/Base_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Base_SO101.step",
+      "sha256": "95209ec6a3ca06b1ec084f72d9c73324bdcf9d0e17213ef293f45f95a3993288",
+      "bytes": 1092553
+    },
+    {
+      "path": "STEP/SO101/Base_motor_holder_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Base_motor_holder_SO101.step",
+      "sha256": "f13462eea875727ae7cec7d190c59642444b9076c76cf2423bbe3c5b6c469587",
+      "bytes": 300211
+    },
+    {
+      "path": "STEP/SO101/Motor_holder_SO101_Base.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Motor_holder_SO101_Base.step",
+      "sha256": "fb2ef4603324ddea53ab655f6ecd48c7f5a72dd7603e57e92c60c0a8e67a9083",
+      "bytes": 352248
+    },
+    {
+      "path": "STEP/SO101/Motor_holder_SO101_Wrist.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Motor_holder_SO101_Wrist.step",
+      "sha256": "e58d86502535a5a4936677e9d934f1bda9417e83f7480f475061728c146739c4",
+      "bytes": 346197
+    },
+    {
+      "path": "STEP/SO101/Rotation_Pitch_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Rotation_Pitch_SO101.step",
+      "sha256": "a392681efb05bf4009c17115a9b3e37bbee9d2fcfe25e2066b11b95aaa380915",
+      "bytes": 370844
+    },
+    {
+      "path": "STEP/SO101/Upper_arm_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Upper_arm_SO101.step",
+      "sha256": "efa19a6dd2ccb459248500c76629cfa840630e7e15d9e146394d31da1525dd61",
+      "bytes": 551437
+    },
+    {
+      "path": "STEP/SO101/Under_arm_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Under_arm_SO101.step",
+      "sha256": "677a1a57efeddc439d97ebdc309b1c2853cfcb83f14c7d695c312fcf13a89713",
+      "bytes": 626245
+    },
+    {
+      "path": "STEP/SO101/Wrist_Roll_Pitch_SO101.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/STEP/SO101/Wrist_Roll_Pitch_SO101.step",
+      "sha256": "39c5e78647d471ab4e4328ec6d00f06ad90dc48a0b1ffe4baf1a951c1304f74b",
+      "bytes": 1203030
+    },
+    {
+      "path": "Optional/SO101_Wrist_Cam_Hex-Nut_Mount_32x32_UVC_Module/stl/SO-ARM101_camera_wrist_mount.step",
+      "url": "https://raw.githubusercontent.com/TheRobotStudio/SO-ARM100/a758567c3978dfeefe282ede0500085a48fe8f78/Optional/SO101_Wrist_Cam_Hex-Nut_Mount_32x32_UVC_Module/stl/SO-ARM101_camera_wrist_mount.step",
+      "sha256": "abba98321af20b6aadf0a82ac3758a27745efae047c662489026c6991f241f38",
+      "bytes": 84186
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "model_signature": "8f63127e728cac0eee631384d3f181ba7b958d8c248492a419bf961996fd6b9e",
+  "position_tolerance_m": 0.0005,
+  "orientation_tolerance_degrees": 1.0,
+  "tasks": {
+    "base_side_cover": {
+      "receiver": "base_servo",
+      "geom": "base_side_cover_printed_0",
+      "mesh_center_local": [
+        0.0009242799133062363,
+        -0.0013959454372525215,
+        0.006463518366217613
+      ],
+      "center_receiver_local": [
+        0.001467263425115271,
+        0.018786871874092836,
+        0.05188748125983005
+      ],
+      "rotation_receiver_local": [
+        [
+          -0.0008238759384654583,
+          -0.9999736195957087,
+          0.0072167403375778625
+        ],
+        [
+          -0.09479476043360627,
+          -0.007106147484018737,
+          -0.995471474258442
+        ],
+        [
+          0.9954964965396808,
+          -0.0015042541664824992,
+          -0.09478640512557382
+        ]
+      ],
+      "size_m": [
+        0.034201111644506454,
+        0.047600455582141876,
+        0.08291201293468475
+      ],
+      "source_alignment": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/robotics-assembly-3.0/outputs/insertion-fix-20261107/cover/canonical-common-v1/alignment.json",
+      "source_sha256": "1f506941b90750c6c252fd3ec21bf02e69f37e77dbba0973e807a42dcf34f2d7",
+      "depth_reference_mm": 55.002685602978104
+    },
+    "shoulder_connector": {
+      "receiver": "base_servo",
+      "geom": "shoulder_connector_printed_0",
+      "mesh_center_local": [
+        0.00025632884353399277,
+        0.006341245956718922,
+        -0.0007281377911567688
+      ],
+      "center_receiver_local": [
+        9.880242275783741e-05,
+        -0.028461260298944805,
+        0.05999794340658642
+      ],
+      "rotation_receiver_local": [
+        [
+          0.9999770753222457,
+          -0.003229959559349237,
+          -0.005951150410834853
+        ],
+        [
+          0.0008925331758791175,
+          0.9341015855407317,
+          -0.3570062062133099
+        ],
+        [
+          0.00671209464305794,
+          0.3569927103618999,
+          0.9340830544089571
+        ]
+      ],
+      "size_m": [
+        0.04612623155117035,
+        0.07062209397554398,
+        0.09816081076860428
+      ],
+      "source_alignment": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/robotics-assembly-3.0/outputs/insertion-fix-20261107/connector/canonical-common-v1/coherent-alignment.json",
+      "source_sha256": "ec2cc83c7be836233ac1873cd04c087812d1770df6a979322e1859c5d874decb",
+      "depth_reference_mm": 65.00800000000748
+    },
+    "assembly_pin": {
+      "receiver": "shoulder_connector",
+      "geom": "pin",
+      "mesh_center_local": [
+        0.0,
+        0.0,
+        0.006621228065341711
+      ],
+      "center_receiver_local": [
+        -9.943252334889741e-05,
+        -0.007720821982880009,
+        0.08278040052127879
+      ],
+      "rotation_receiver_local": [
+        [
+          0.9999999999999999,
+          -1.110307572406885e-16,
+          -1.346440260393259e-16
+        ],
+        [
+          -2.465190328815662e-32,
+          -0.9999619230641713,
+          0.00872653549837149
+        ],
+        [
+          -1.3617579286417936e-16,
+          -0.00872653549837149,
+          -0.9999619230641712
+        ]
+      ],
+      "size_m": [
+        0.012000000104308128,
+        0.012000000104308128,
+        0.041999999433755875
+      ],
+      "source_alignment": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/robotics-assembly-3.0/outputs/insertion-fix-20261107/pin/final-common-proof/fit/alignment.json",
+      "source_sha256": "5ecef166af41f061950f62c05759f07d7c3592db9ce1a6de0012be2aa00ab4ee",
+      "depth_reference_mm": 32.100349208342
+    },
+    "upper_arm_module": {
+      "receiver": "shoulder_connector",
+      "geom": "servo_2_case",
+      "mesh_center_local": [
+        0.00011155940592288971,
+        -0.0008811857551336288,
+        0.001714177429676056
+      ],
+      "center_receiver_local": [
+        0.0007007627775732768,
+        -0.03872897877480336,
+        0.1072564356214422
+      ],
+      "rotation_receiver_local": [
+        [
+          0.0037989400306434667,
+          -0.9951123785421024,
+          -0.09867584368489185
+        ],
+        [
+          0.9999918031432802,
+          0.0036421877164125797,
+          0.0017686477579813102
+        ],
+        [
+          -0.001400607331472176,
+          -0.09868175383990727,
+          0.9951180582012293
+        ]
+      ],
+      "size_m": [
+        0.025124305859208107,
+        0.03914185240864754,
+        0.04770527780056
+      ],
+      "source_alignment": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/robotics-assembly-3.0/outputs/insertion-fix-20261107/upper/canonical-common-v1/alignment.json",
+      "source_sha256": "c0e0401aefbcad3e043c1beb5bb25fc9d240d5bba328072082cbb7dfd9f09df7",
+      "depth_reference_mm": 25.00099850998742
+    },
+    "forearm_module": {
+      "receiver": "upper_arm_module",
+      "geom": "servo_3_case",
+      "mesh_center_local": [
+        0.00011156080290675163,
+        -0.000881182961165905,
+        0.0017141830176115036
+      ],
+      "center_receiver_local": [
+        0.0020253772509884376,
+        0.07383513419639251,
+        0.13610820605063664
+      ],
+      "rotation_receiver_local": [
+        [
+          -0.0049271860102161205,
+          -0.9950987619933213,
+          -0.09876323565670656
+        ],
+        [
+          0.9999868804496705,
+          -0.005041425591722553,
+          0.0009071695217102516
+        ],
+        [
+          -0.0014006307717329975,
+          -0.09875747013448932,
+          0.9951105467866767
+        ]
+      ],
+      "size_m": [
+        0.025124303996562958,
+        0.03914184123277664,
+        0.04770527780056
+      ],
+      "source_alignment": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/robotics-assembly-3.0/outputs/insertion-fix-20261107/final/canonical/alignment-prepared.json",
+      "source_sha256": "07d15786fba79933d02d976fa44dda9baa9e95dcc1d74ea32da9d97378993282",
+      "depth_reference_mm": 25.002862047424376
+    }
+  },
+  "definition": "Binary seating reward: active and all preceding mating features satisfy receiver-relative position box and rotation-angle tolerance. Goal frames from measured full-depth native endpoints. Geometric criterion, not a material/contact/settling certificate."
+}

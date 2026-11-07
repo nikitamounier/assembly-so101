@@ -1,0 +1,71 @@
+{
+  "origin": "User-owned Feather SO101 assembly simulation integration",
+  "scope": "Simulation-only controller, immutable owner/HTTP transport and stereo Quest client; no physical robot SDK copied",
+  "files": {
+    "backend.py": {
+      "source": "assembly_backend.py",
+      "source_sha256": "eb8b3b94b843911ff46caf12b484d0275ab422b2be9c9e66f1dab746bdff0dc0"
+    },
+    "serve.py": {
+      "source": "serve.py",
+      "source_sha256": "f95be74a21253c210668eb184ea595391a9bc1d4f4f4e7c1f190bf8fe334b345"
+    },
+    "visual_scene.py": {
+      "source": "visual_scene.py",
+      "source_sha256": "4addee360a64ae334afe2040803bce8d4d64824d65fa5b14a99890574a9aed86"
+    },
+    "control.py": {
+      "source": "src/so101_teleop/control.py",
+      "source_sha256": "d155ea79de8cdd831f61f1b9bc0d90365f7c9f70f1fee33a391de9908d9f2b9f"
+    },
+    "runtime.py": {
+      "source": "src/so101_teleop/preview_server.py",
+      "source_sha256": "b47110f8379fec13c09abe61cebb6caf61df27a501ebfe5d3eb3b203c701c54d"
+    },
+    "web/immersive.mjs": {
+      "source": "web/immersive.mjs",
+      "sha256": "cba5faddd02f77244919a5f1c7f493519a5bcf555f2b15b98467857cb47426f4"
+    },
+    "web/hybrid.mjs": {
+      "source": "web/hybrid.mjs",
+      "sha256": "752378e665f0f81acaa4ab2504425ba478c949002033a5fc0e2e27079fbb7709"
+    },
+    "web/index.html": {
+      "source": "web/index.html",
+      "sha256": "9abbc65a2beeabf576faa3faa1dc1e6eb12651b95d1812e8250300fd5acb8df4"
+    },
+    "web/app.js": {
+      "source": "web/app.js",
+      "sha256": "3b294f5bc2ad433ea97a85f6e49e41a27d0f0372558deda9bddb9dbbabba1c87"
+    },
+    "web/style.css": {
+      "source": "web/style.css",
+      "sha256": "5478a134fae3367348e430dc9983d9d09fc982a0d63ec6b2ea1049653fb6f0e4"
+    },
+    "web/preview.mjs": {
+      "source": "web/preview.mjs",
+      "sha256": "d1aff0c9a4d09ad398d9de5c12a755d22ab034b5e5ff2511a6b6f5f39ab517b2"
+    },
+    "web/vendor/three.core.js": {
+      "source": "web/vendor/three.core.js",
+      "sha256": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
+    },
+    "web/vendor/PROVENANCE.json": {
+      "source": "web/vendor/PROVENANCE.json",
+      "sha256": "48839ca37043d679e7874d57bcd91ed710b5739b77784387ae6de21ba40ae54d"
+    },
+    "web/vendor/LICENSE": {
+      "source": "web/vendor/LICENSE",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+    },
+    "web/vendor/three.module.js": {
+      "source": "web/vendor/three.module.js",
+      "sha256": "9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea"
+    }
+  },
+  "adaptations": [
+    "Package imports and repository-relative paths",
+    "Remove obsolete independent model/CLI; only canonical training factory is used",
+    "CPU setup and portable ADB/launch helpers"
+  ]
+}

@@ -9,6 +9,12 @@ export function variationStatus(variation) {
   if (!variation) return null;
   if (variation.training_eligible === true)
     return "Physically qualified training reset";
+  const equilibrium =
+    variation.equilibrium || variation.reference_validation?.equilibrium;
+  if (equilibrium?.equilibrium_pass === false)
+    return "Hold test failed · not an equilibrium reset";
+  if (equilibrium?.equilibrium_pass === true)
+    return "Equilibrium hold passed · task admission pending";
   if (variation.kind === "nominal") {
     if (variation.candidate_rejected || variation.rejected)
       return "Reference pose · validation failed";
@@ -31,6 +37,47 @@ export function variationFields(variation) {
     ],
     ["VALIDATION", variationStatus(variation)],
   ];
+  const equilibrium =
+    variation.equilibrium || variation.reference_validation?.equilibrium;
+  if (equilibrium) {
+    fields.push(
+      [
+        "BRACKET ARTICULATION",
+        equilibrium.prescribed_bracket_angle === false
+          ? "Passive · no angle target"
+          : "Not verified",
+      ],
+      ["UNCHANGED-CONTROL HOLD", quantity(equilibrium.hold_seconds, " s")],
+      [
+        "MAXIMUM PART MOTION",
+        quantity(
+          Math.max(
+            ...Object.values(equilibrium.part_displacement_m || {}).filter(
+              Number.isFinite,
+            ),
+          ) * 1000,
+          " mm",
+        ),
+      ],
+      [
+        "MAXIMUM PART ROTATION",
+        quantity(
+          Math.max(
+            ...Object.values(equilibrium.part_rotation_degrees || {}).filter(
+              Number.isFinite,
+            ),
+          ),
+          "°",
+        ),
+      ],
+      [
+        "HOLD TEST",
+        equilibrium.equilibrium_pass
+          ? "Passed · task admission remains separate"
+          : (equilibrium.rejection_reasons || []).join("; "),
+      ],
+    );
+  }
   if (variation.cad_revision || sampling.cad_revision)
     fields.push([
       "CAD REVISION",

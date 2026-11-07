@@ -1,0 +1,10 @@
+# CPU-only Quest simulator runtime, Python3.12 / Linux x86-64 or macOS ARM64. No torch/CUDA needed.
+mujoco==3.17.0
+numpy==2.5.4
+scipy==1.18.1
+pillow==13.0.0
+libigl==2.6.3
+
+# Reproducible extraction of the additional vendor arm-link runtime.
+rhino3dm==8.35.0
+trimesh==5.2.0

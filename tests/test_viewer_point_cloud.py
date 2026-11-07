@@ -70,6 +70,9 @@ def test_exact_ordered_tensor_without_legacy_model(observation, monkeypatch):
     )
     actual = np.array(cloud["flat"], np.float32).reshape(448, 3)
     np.testing.assert_allclose(actual, expected, atol=1e-6)
+    frame = cloud["frame_pose_world"]
+    overlay = actual / cloud["scale"] @ np.array(frame["rotation_row_major"]).reshape(3, 3).T + frame["position"]
+    np.testing.assert_allclose(overlay, np.concatenate([world, grip]), atol=1e-7)
     np.testing.assert_array_equal(cloud["points"], actual)
     np.testing.assert_array_equal(data.qpos, before)
     assert cloud["state_id"] == "selected-state" and cloud["preview"]

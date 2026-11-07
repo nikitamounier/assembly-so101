@@ -1,5 +1,8 @@
 import * as THREE from "three";
+import { RewardOverlay } from "./reward.js";
+import { pointCloudWorldPositions } from "./point-cloud-data.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
 
 const Z = new THREE.Vector3(0, 0, 1);
 
@@ -7,6 +10,7 @@ export class ThreeSceneRenderer {
   constructor(container) {
     this.container = container;
     this.scene = new THREE.Scene();
+    this.rewardOverlay = new RewardOverlay(this.scene);
     this.scene.background = new THREE.Color("#e8eceb");
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.001, 20);
     this.camera.up.copy(Z);
@@ -41,6 +45,7 @@ export class ThreeSceneRenderer {
     grid.material.transparent = true;
     grid.material.opacity = 0.3;
     this.scene.add(grid);
+    this.geometryVisible = this.pointsVisible = true;
     this.objects = [];
     this.resources = new Set();
     this.resize = new ResizeObserver(() => this.resizeView());
@@ -126,12 +131,15 @@ export class ThreeSceneRenderer {
       this.resources.add(material);
       const object = new THREE.Mesh(geometry, material);
       object.name = geom.name;
+      object.visible = this.geometryVisible;
       this.scene.add(object);
       return object;
     });
   }
 
   setSnapshot(snapshot) {
+    this.setPointCloud(snapshot.point_cloud);
+    this.rewardOverlay.setSnapshot(snapshot.reward_region);
     snapshot.poses.forEach(([x, y, z, w, qx, qy, qz], index) => {
       this.objects[index].position.set(x, y, z);
       this.objects[index].quaternion.set(qx, qy, qz, w);
@@ -160,11 +168,54 @@ export class ThreeSceneRenderer {
     }
   }
 
+  clearPointCloud() {
+    if (!this.pointCloud) return;
+    this.scene.remove(this.pointCloud);
+    this.pointCloud.geometry.dispose();
+    this.pointCloud.material.dispose();
+    this.pointCloud = null;
+  }
+
+  setPointCloud(cloud) {
+    this.clearPointCloud();
+    if (!cloud?.available) return;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(pointCloudWorldPositions(cloud), 3));
+    const colors = new Float32Array(cloud.count * 3);
+    for (const group of cloud.groups) {
+      const color = new THREE.Color(group.color);
+      for (let i = group.start; i < group.start + group.count; i++) color.toArray(colors, i * 3);
+    }
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    this.pointCloud = new THREE.Points(geometry, new THREE.PointsMaterial({ size: 5, sizeAttenuation: false, vertexColors: true, depthTest: false, depthWrite: false, toneMapped: false }));
+    this.pointCloud.name = "policy-input-points";
+    this.pointCloud.renderOrder = 10;
+    this.pointCloud.visible = this.pointsVisible;
+    this.scene.add(this.pointCloud);
+  }
+
+  setLayers({ geometry, points }) {
+    this.geometryVisible = geometry;
+    this.pointsVisible = points;
+    for (const object of this.objects) object.visible = geometry;
+    if (this.pointCloud) this.pointCloud.visible = points;
+  }
+
   preset(name) {
     this.activePreset = name;
+    if (name === "detail" && this.rewardOverlay.region?.available) {
+      const box = this.rewardOverlay.region.target_box;
+      const target = new THREE.Vector3().fromArray(box.center);
+      const radius = new THREE.Vector3().fromArray(box.size).length() / 2;
+      const distance = radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 1.6 / Math.min(1, this.camera.aspect);
+      this.camera.position.copy(target).add(new THREE.Vector3(1, -1, 1).normalize().multiplyScalar(distance));
+      this.controls.target.copy(target);
+      this.controls.update();
+      return;
+    }
     if (this.reviewFocus) {
       const target = new THREE.Vector3().fromArray(this.reviewFocus.target);
-      const direction = name === "top" ? [0, -.001, 1] : name === "front" ? [0, -1, .12] : [.65, -.85, .6];
+      const direction = name === "top" ? [0, -.001, 1] : name === "front" ? [0, -1, .12] : name === "perspective" ? [1, -1, 1] : [1, -1, 1];
       const offset = new THREE.Vector3(...direction).normalize().multiplyScalar(this.reviewFocus.radius * 3);
       this.camera.position.copy(target).add(offset);
       this.controls.target.copy(target);
@@ -215,7 +266,7 @@ export class ThreeSceneRenderer {
     }
     const presets = {
       perspective: [
-        [0.68, -0.88, 0.72],
+        [0.8, -0.775, 0.92],
         [0, 0.025, 0.12],
       ],
       top: [
@@ -238,6 +289,8 @@ export class ThreeSceneRenderer {
   }
 
   dispose() {
+    this.clearPointCloud();
+    this.rewardOverlay.clear();
     this.resize.disconnect();
     this.renderer.setAnimationLoop(null);
     this.controls.dispose();
@@ -293,7 +346,13 @@ export class SceneView {
     this.threeHost.hidden = this.mode !== "three";
     if (this.mode === "mujoco") this.mujoco.frame.hidden = false;
   }
+  setRewardVisible(visible) { this.three.rewardOverlay.setVisible(visible); }
+  setLayers(layers) {
+    this.three.setLayers(layers);
+  }
   clear() {
+    this.three.clearPointCloud();
+    this.three.rewardOverlay.clear();
     this.threeHost.hidden = true;
     this.mujoco.hide();
   }

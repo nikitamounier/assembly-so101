@@ -1,0 +1,2 @@
+# Preserve pinned upstream renderer bytes, including its original indentation.
+teleop/web/vendor/*.js -whitespace

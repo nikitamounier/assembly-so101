@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "profile": "wowrobo-leader-photo-20261107-v2",
+  "upstream_revision": "a758567c3978dfeefe282ede0500085a48fe8f78",
+  "target_piece_count": 6,
+  "pieces": [
+    {
+      "name": "base_servo",
+      "label": "Base + servo",
+      "printed": [
+        "Base_SO101 v12:1"
+      ],
+      "servos": [
+        1
+      ],
+      "photos": [
+        "IMG_1622"
+      ],
+      "review_position_m": [
+        -0.24,
+        0.01,
+        0.065
+      ]
+    },
+    {
+      "name": "base_side_cover",
+      "label": "Separate base side cover",
+      "printed": [
+        "Base_08p v18:1"
+      ],
+      "servos": [],
+      "photos": [
+        "IMG_1622"
+      ],
+      "review_position_m": [
+        -0.08,
+        0.01,
+        0.065
+      ]
+    },
+    {
+      "name": "shoulder_connector",
+      "label": "Two-part shoulder connector",
+      "printed": [
+        "Rotation_Pitch_SO101 v8:1",
+        "Motor_holder_SO101_Base v6:1"
+      ],
+      "servos": [],
+      "photos": [
+        "IMG_1617",
+        "IMG_1620",
+        "IMG_1624"
+      ],
+      "review_position_m": [
+        0.08,
+        0.01,
+        0.065
+      ]
+    },
+    {
+      "name": "upper_arm_module",
+      "label": "Upper arm + one servo",
+      "printed": [
+        "Upper_arm_SO101 v9:1"
+      ],
+      "servos": [
+        2
+      ],
+      "photos": [
+        "IMG_1610"
+      ],
+      "review_position_m": [
+        0.24,
+        0.01,
+        0.065
+      ]
+    },
+    {
+      "name": "forearm_module",
+      "label": "Final arm piece + two servos",
+      "printed": [
+        "Under_arm_SO101 v12:1",
+        "Motor_holder_SO101_Wrist v8:1"
+      ],
+      "servos": [
+        3,
+        4
+      ],
+      "photos": [
+        "IMG_1610",
+        "IMG_1612"
+      ],
+      "review_position_m": [
+        -0.12,
+        -0.22,
+        0.065
+      ]
+    },
+    {
+      "name": "assembly_pin",
+      "label": "Assembly pin",
+      "printed": [],
+      "servos": [],
+      "photos": [],
+      "review_position_m": [
+        0.12,
+        -0.22,
+        0.04
+      ]
+    }
+  ],
+  "pin_mm": {
+    "total_length": 42.5,
+    "shaft_length": 14.5,
+    "shaft_diameter": 2.3,
+    "grip_diameter": 12,
+    "grip_length": 28,
+    "overlap": 0.01,
+    "facets": 128
+  },
+  "helper": {
+    "type": "SO101 follower",
+    "count": 2,
+    "grippers": true,
+    "wrist_cameras": 2,
+    "camera_board_mm": [
+      32,
+      32,
+      1.6
+    ],
+    "camera_fovy_degrees": 75,
+    "camera_calibration": "provisional; measured extrinsics/intrinsics unavailable"
+  },
+  "omitted_target_parts": [
+    "Wrist_Roll_Pitch",
+    "Wrist_Roll_Follower",
+    "Moving_Jaw",
+    "leader handle",
+    "leader trigger",
+    "servo 5",
+    "servo 6"
+  ],
+  "qualification": "CAD component/review assets only; insertion contacts, pin hole modification, rewards and reset banks not qualified",
+  "structural_piece_count": 5,
+  "moving_servo_parts": {
+    "1": "servo_horns",
+    "2": "servo_case",
+    "3": "servo_case",
+    "4": "servo_horns"
+  },
+  "pin_fit": {
+    "profile": "wowrobo-fit-pin-20261107-v2",
+    "shaft_selection": "User authorizes unprinted fit-first pin:2.3mmshaft x14.5mm, unchanged12x28grip,total42.5mm",
+    "nominal_bore_diameter_mm": 2.5,
+    "nominal_radial_clearance_mm": 0.1,
+    "qualification": "Source-mesh radial/axial clearance selected from measured stop and blind bore; physical replay and printed tolerances remain separate",
+    "measured_head_stop_to_blind_bore_bottom_mm": 14.800004,
+    "nominal_axial_clearance_mm": 0.300004
+  }
+}

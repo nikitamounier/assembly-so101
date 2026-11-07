@@ -1,0 +1,23 @@
+WowRobo SO101 photo-based component review
+
+Base geometry and helper models: The Robot Studio / SO-ARM100 project.
+https://github.com/TheRobotStudio/SO-ARM100
+Revision a758567c3978dfeefe282ede0500085a48fe8f78
+License: Apache-2.0; full upstream license included as SO-ARM100.LICENSE.
+
+Derived work: selection and regrouping into the demonstrated preassembled
+leader components; separate cases/horns and shaft axes; mesh tessellation;
+portable articulated review scene; provisional camera PCB/lens and placement.
+The assembly pin implements the user's supplied dimensions and OpenSCAD.
+Source geometry is not a guarantee of exact WowRobo hardware revision or fit.
+
+Helper model was generated using onshape-to-robot. Its source identifies:
+https://cad.onshape.com/documents/7715cc284bb430fe6dab4ffd/w/4fd0791b683777b02f8d975a/e/826c553ede3b7592eb9ca800
+Motor model comments reference apirrone/Open_Duck_Mini and Gregory119/RBE501-RL-arm-project.
+No Hiwonder geometry or user's photos are included in this bundle.
+
+Camera-equipped follower reference: Desmond Zee, ICL-so101, MIT license.
+https://github.com/desmondzee/ICL-so101
+Revision 01782763fb8ad2473af96a345f91bfc319300326
+See ICL-so101.LICENSE and camera-source-lock.json. Registered camera attachment
+and camera mesh reused; no unrelated physics/controller changes imported.

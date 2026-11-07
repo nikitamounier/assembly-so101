@@ -14,7 +14,8 @@ import mujoco
 import numpy as np
 from mujoco import rollout
 
-from .core import JOINTS, RIGHT_GRASP_LOOKBACK_S, cube_inside_target, model, placement_contacts, success
+from .core import (FAMILIES, HANDOFF_HOLD_S, HANDOFF_REWARD, JOINTS, PAD_LOAD_THRESHOLD_N,
+                   RIGHT_GRASP_LOOKBACK_S, cube_inside_target, model, placement_contacts, success)
 
 HISTORY = 5
 PROPRIO_DIM = 50
@@ -78,6 +79,7 @@ class BatchedCubeEnv:
         if self.m.nplugin or self.m.neq or np.any(self.m.geom_type == mujoco.mjtGeom.mjGEOM_SDF):
             raise ValueError("Cube backend requires plugin-free native contacts and no equality attachments")
         self.reset_context = {}
+        self.reset_handoff_consumed = {}
         if self.ecfg.reset_context_path:
             path = Path(self.ecfg.reset_context_path)
             manifest = json.loads(path.with_name("manifest.json").read_text())
@@ -89,6 +91,15 @@ class BatchedCubeEnv:
                         context["histories"][j].copy(), context["previous_actions"][j].copy(),
                         float(context["right_grasp_age_s"][j]), bool(context["carry_started"][j]),
                     )
+            # Family identity is authoritative for starts already past transfer,
+            # including dynamic snapshots with incidental left-pad brushing.
+            delivered = {FAMILIES.index(f) for f in ('post_handoff', 'right_transport', 'near_target', 'placed_held')}
+            for split in ('train', 'eval'):
+                bank_path = path.with_name(f'cube_handoff_{split}.npz')
+                if bank_path.exists():
+                    with np.load(bank_path) as bank:
+                        for state, family in zip(bank['states'], bank['family']):
+                            self.reset_handoff_consumed[hashlib.sha256(state.tobytes()).hexdigest()] = int(family) in delivered
         self.task_names = list(task_names)
         self.task = np.asarray(task_of_env, np.int64).copy()
         self.N = len(self.task)
@@ -111,6 +122,10 @@ class BatchedCubeEnv:
         self.continuity_broken = np.zeros(self.N, bool)
         self.off_target_table_contact = np.zeros(self.N, bool)
         self.delivery_touchdown = np.zeros(self.N, bool)
+        self.left_grasp_seen = np.zeros(self.N, bool)
+        self.handoff_paid = np.zeros(self.N, bool)
+        self.handoff_hold_s = np.zeros(self.N)
+        self.handoff_pending = np.zeros(self.N, bool)
         self.touchdown_data = mujoco.MjData(self.m)
         self.cube_geom = self.m.geom("cube_geom").id
         self.table_geom = self.m.geom("table").id
@@ -155,6 +170,14 @@ class BatchedCubeEnv:
             mujoco.mj_forward(self.m, d)
             contacts = placement_contacts(self.m, d)
             ground, held = contacts["table_touching"], contacts["right_held"]
+            loads = contacts['pad_loads_n']
+            self.left_grasp_seen[i] = np.all(loads[:2] > PAD_LOAD_THRESHOLD_N)
+            key = hashlib.sha256(states[row].tobytes()).hexdigest()
+            self.handoff_paid[i] = self.reset_handoff_consumed.get(
+                key, bool(held and not np.any(loads[:2] > PAD_LOAD_THRESHOLD_N))
+            )
+            self.handoff_hold_s[i] = 0
+            self.handoff_pending[i] = False
             # Mid-trajectory banks have an assumed valid preceding carry.
             self.carry_started[i] = np.any(contacts["pad_touching"]) and (not ground or held)
             self.continuity_broken[i] = False
@@ -218,6 +241,23 @@ class BatchedCubeEnv:
             touching = contacts["pad_touching"]
             inside = bool(ground and self.carry_started[i] and cube_inside_target(self.m, d))
             self._continuity_sample(i, ground, bool(np.any(touching[:2])), bool(np.any(touching)), inside)
+            self._handoff_sample(i, contacts)
+
+    def _handoff_sample(self, i, contacts):
+        loads = contacts['pad_loads_n']
+        self.left_grasp_seen[i] |= bool(np.all(loads[:2] > PAD_LOAD_THRESHOLD_N))
+        if self.handoff_paid[i]:
+            return
+        qualified = (
+            self.left_grasp_seen[i] and self.carry_started[i]
+            and not self.off_target_table_contact[i]
+            and not contacts['table_touching'] and contacts['right_held']
+            and not np.any(loads[:2] > PAD_LOAD_THRESHOLD_N)
+        )
+        self.handoff_hold_s[i] = self.handoff_hold_s[i] + self.m.opt.timestep if qualified else 0
+        if self.handoff_hold_s[i] + 1e-12 >= HANDOFF_HOLD_S:
+            self.handoff_paid[i] = True
+            self.handoff_pending[i] = True
 
     def _refresh(self):
         prop = []
@@ -263,6 +303,7 @@ class BatchedCubeEnv:
         action = np.asarray(action, float)
         if action.shape != (self.N, ACT_DIM) or not np.isfinite(action).all():
             raise ValueError("Expected finite (N,12) actions")
+        self.handoff_pending[:] = False
         current = self.last_ctrl
         scales = np.tile(np.r_[self.ecfg.action_scale_joints, self.ecfg.gripper_scale], 2)
         ctrl = np.clip(
@@ -317,7 +358,8 @@ class BatchedCubeEnv:
             np.float32,
         )
         info = dict(success=won, safety=false, timeout=timeout, d_asm=distance, cost=cost, unstable=false)
-        return (won.astype(np.float32) - cost).astype(np.float32), won | failed | timeout, info
+        handoff = self.handoff_pending & ~failed
+        return (won.astype(np.float32) + HANDOFF_REWARD * handoff - cost).astype(np.float32), won | failed | timeout, info
 
 
 BatchedAssemblyEnv = BatchedCubeEnv

@@ -1,0 +1,9 @@
+from pathlib import Path
+import json,numpy as np,mujoco
+from assembly_policy.so101.wowrobo_boundaries import NativeBoundaryAudit
+p=Path('outputs/legacy-fit-port-20261107/final');r=json.loads((p/'validation-matrix.json').read_text());a=json.loads(Path('outputs/linear-insertion-aligned-20261107/final/alignment.json').read_text());m=mujoco.MjModel.from_xml_path('outputs/linear-insertion-20261107/source-snapshot/scene.xml');d=mujoco.MjData(m);audit=NativeBoundaryAudit(m,max_samples=4096);active=[g for g in audit.targets if audit.info[g]['piece']=='forearm_module'];other=[g for g in audit.targets if audit.info[g]['piece']!='forearm_module'];qa=int(m.joint('forearm_module_free').qposadr[0]);qstart=np.array(a['start_qpos']);axis=np.array(a['axis_world']);rows=[]
+for case in r['cases']:
+ if not case['contacts_enabled']:continue
+ for label,k in [('drive','final_drive_axial_mm'),('max','all_substep_maximum_axial_mm'),('relaxed','final_relaxed_axial_mm')]:
+  mm=case[k];d.qpos[:]=qstart;d.qpos[qa:qa+3]+=mm*.001*axis;mujoco.mj_forward(m,d);bounds=audit._bounds(d,audit.info);pairs=audit._pairs(d,[(a,b) for a in active for b in other],bounds);peak=max([x['penetration_m'] for x in pairs],default=0);rows.append({'case':case['case'],'phase':label,'axial_mm':mm,'max_source_penetration_mm':1000*peak,'below_0p5mm':peak<=.0005,'pairs':[{'a':x['a']['geom_name'],'b':x['b']['geom_name'],'mm':1000*x['penetration_m']} for x in pairs if x['penetration_m']>.0001]})
+result={'source':'Originalnativeallcomponenttrianglemeshes;4096vertices+trianglecentersamples eachdirectionafterAABB','all_under_0p5mm':all(x['below_0p5mm'] for x in rows),'rows':rows};(p/'matrix-source-overlap.json').write_text(json.dumps(result,indent=2)+'\n');print('allpass',result['all_under_0p5mm']);print([x for x in rows if x['case']=='legacy_mapped_20N'])

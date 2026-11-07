@@ -183,7 +183,7 @@
               </div>
               <div class="mode-switch" role="group" aria-label="Renderer">
                 <button id="three-mode" class="active" aria-pressed="true">
-                  ◈ <span>3D</span></button
+                  ◈ <span>Scene</span></button
                 ><button id="mujoco-mode" aria-pressed="false">
                   ▧ <span>MuJoCo</span>
                 </button>
@@ -199,7 +199,13 @@
               <div id="scene-view"></div>
               <div class="viewport-top">
                 <span id="view-label">3D SCENE</span
-                ><button id="home-camera" title="Fit scene (F)">
+                >
+                <div class="scene-layer-controls" role="group" aria-label="Scene layers">
+                  <button id="toggle-geometry" aria-pressed="true">3D</button>
+                  <button id="toggle-points" aria-pressed="true" disabled>Points</button>
+                  <button id="toggle-reward" aria-pressed="false" disabled>Reward region</button>
+                </div>
+                <button id="home-camera" title="Fit scene (F)">
                   ⌖ <span>Fit scene</span>
                 </button>
               </div>
@@ -235,13 +241,23 @@
             <section class="point-cloud-section" aria-labelledby="point-cloud-title">
               <div class="point-cloud-heading">
                 <div><h2 id="point-cloud-title">Point cloud</h2><p id="point-cloud-status" role="status">Select an assembly state</p></div>
-                <div class="point-cloud-actions"><button id="point-cloud-fit" disabled>Fit points</button><button id="point-cloud-download" disabled>Download JSON</button></div>
+                <div class="point-cloud-actions"><button id="point-cloud-fit" title="Restore isometric perspective" disabled>Perspective</button><button id="point-cloud-download" disabled>Download JSON</button></div>
               </div>
               <div id="point-cloud-meta"></div>
-              <div id="point-cloud-view" hidden aria-label="Interactive policy point cloud"></div>
               <p id="point-cloud-empty">No assembly state selected.</p>
               <div id="point-cloud-legend" class="point-cloud-legend"></div>
-              <p id="point-cloud-note">All ordered input points · Drag to orbit · Scroll to zoom</p>
+              <p id="point-cloud-note">All ordered input points shown in the scene · Toggle Points and 3D independently</p>
+            </section>
+            <section class="reward-section" aria-labelledby="reward-title">
+              <h2 id="reward-title">Seating reward</h2>
+              <p id="reward-status" role="status">Select an assembly task to see its seating target.</p>
+              <div class="reward-tolerances">
+                <label>Position noise ± <input id="reward-position" type="number" value="0.5" min="0.01" max="5" step="0.01" disabled> mm</label>
+                <label>Orientation ≤ <input id="reward-angle" type="number" value="1" min="0.1" max="10" step="0.1" disabled> °</label>
+                <button id="reward-apply" disabled>Apply tolerance</button>
+              </div>
+              <p class="reward-help">Gold: fully inserted target. Green: allowed position noise at its center. Orientation must also meet the limit. Boxes follow the receiver.</p>
+              <p class="reward-help">Geometric seating criterion; contact safety and settling are separate checks.</p>
             </section>
             <details
               id="variation-review"
@@ -271,6 +287,18 @@
         <div id="error" role="alert" hidden></div>
       </main>
     </div>
+    <dialog id="reference-video-dialog" aria-labelledby="reference-video-title">
+      <div class="reference-video-header">
+        <h2 id="reference-video-title">Final module · Motion comparison</h2>
+        <button id="close-reference-video" type="button" aria-label="Close reference video">Close</button>
+      </div>
+      <div class="reference-video-tabs" role="group" aria-label="Assembly video source">
+        <button id="video-real" type="button" aria-pressed="true">Real assembly</button>
+        <button id="video-simulation" type="button" aria-pressed="false">Physics simulation</button>
+      </div>
+      <video id="reference-video" controls playsinline preload="metadata"></video>
+      <p id="reference-video-caption">Real assembly reference. Intended robot motion: hold the motor, let the bracket fold, then lower it so the bracket slides and opens.</p>
+    </dialog>
     <script type="module" src="/src/app.js"></script>
   </body>
 </html>

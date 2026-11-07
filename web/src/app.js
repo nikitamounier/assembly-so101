@@ -1,4 +1,5 @@
 import "./style.css";
+import { RewardSection } from "./reward.js";
 import {
   filterEntries,
   selectionAfterFilter,
@@ -31,7 +32,7 @@ let catalog,
   page = 0,
   sequence = 0,
   view;
-let pointCloud;
+let pointCloud, rewardSection;
 let selectionRequest = Promise.resolve();
 let stateNavigation = false,
   activeTask = "",
@@ -72,6 +73,20 @@ function drawStateNavigation() {
       group = state.group;
       const heading = document.createElement("h3");
       heading.textContent = group;
+      if (group === "Final module · Left arm") {
+        const videoButton = document.createElement("button");
+        videoButton.className = "reference-video-button";
+        videoButton.type = "button";
+        videoButton.textContent = "▶";
+        videoButton.title = "Compare real assembly and simulation";
+        videoButton.setAttribute("aria-label", "Watch final module reference video");
+        videoButton.onclick = () => {
+          const dialog = $("#reference-video-dialog");
+          chooseAssemblyVideo("simulation");
+          dialog.showModal();
+        };
+        heading.append(videoButton);
+      }
       list.append(heading);
     }
     const button = document.createElement("button");
@@ -465,6 +480,7 @@ async function select(id) {
     $("#qualification").hidden = true;
     view.clear();
     pointCloud.clear();
+    rewardSection.clear();
     $("#selection-title").textContent = "No reset selected";
     $("#selection-split").textContent = "";
     $("#state-time").textContent = "—";
@@ -489,6 +505,7 @@ async function select(id) {
     if (ticket !== sequence) return;
     view.setSnapshot(snapshot);
     pointCloud.setSnapshot(snapshot);
+    rewardSection.setSnapshot(snapshot);
     $("#view-message").hidden = true;
     $("#three-mode").disabled = $("#mujoco-mode").disabled = false;
     details(snapshot.entry, snapshot);
@@ -537,6 +554,7 @@ async function setMode(mode) {
       mode === "three" ? "3D SCENE" : "MUJOCO WEBVIEWER";
     $(".camera-presets").hidden = mode === "mujoco";
     $("#home-camera").hidden = mode === "mujoco";
+    $(".scene-layer-controls").hidden = mode === "mujoco";
     $("#orbit-hint").textContent =
       mode === "three"
         ? "Drag to orbit · Scroll to zoom · Shift-drag to pan"
@@ -716,7 +734,11 @@ async function main() {
     };
   }
   view = new SceneView($("#scene-view"));
-  pointCloud = new PointCloudSection();
+  pointCloud = new PointCloudSection(view);
+  rewardSection = new RewardSection(view, async (values) => {
+    await request("/api/reward-tolerance", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(values)});
+    if (selected) await select(selected);
+  });
   view.setScene(scene);
   $("#total").textContent = catalog.entries.length.toLocaleString();
   for (const bank of catalog.banks) {
@@ -779,7 +801,7 @@ async function main() {
         item.classList.toggle("active", item === button);
     };
   document.addEventListener("keydown", (event) => {
-    if (/INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
+    if (referenceDialog.open || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
       move(1);
@@ -851,3 +873,25 @@ async function main() {
 }
 
 main().catch(fail);
+
+const referenceDialog = $("#reference-video-dialog");
+$("#close-reference-video").onclick = () => referenceDialog.close();
+referenceDialog.addEventListener("close", () => {
+  const video = $("#reference-video");
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+});
+
+function chooseAssemblyVideo(source) {
+  const video = $("#reference-video");
+  video.pause();
+  video.src = `/reference/final-module-${source}.mp4`;
+  $("#video-real").setAttribute("aria-pressed", String(source === "real"));
+  $("#video-simulation").setAttribute("aria-pressed", String(source === "simulation"));
+  $("#reference-video-caption").textContent = source === "real"
+    ? "Real assembly reference. Intended robot motion: hold the motor, let the bracket fold, then lower it so the bracket slides and opens."
+    : "Native physics: force-held motor, passive hinge, fixed receiver, no hand. Bracket folds ~10° then opens to ~0.6°; motor reaches within 0.17 mm of the seating reference under applied force. In a separate 1 s release check it drifted 0.13 mm. Fixed-receiver diagnostic, not training qualification.";
+}
+$("#video-real").onclick = () => chooseAssemblyVideo("real");
+$("#video-simulation").onclick = () => chooseAssemblyVideo("simulation");

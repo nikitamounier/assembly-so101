@@ -1,0 +1,5 @@
+# Offline CAD preparation only; do not add these packages to training workers.
+cadquery==2.8.0
+cadquery-ocp==7.9.3.1.1
+trimesh==5.2.0
+numpy==2.5.4

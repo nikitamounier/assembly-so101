@@ -1379,11 +1379,39 @@ h1 > span {
 .point-cloud-actions button { border: 1px solid #ccd5d1; border-radius: 6px; padding: 8px 12px; background: #fff; font: inherit; font-size: 12px; cursor: pointer; }
 .point-cloud-actions button:disabled { opacity: .45; cursor: default; }
 #point-cloud-meta { margin: 14px 0; font-size: 12px; color: #5a6c68; overflow-wrap: anywhere; }
-#point-cloud-view { height: 340px; width: 100%; border-radius: 8px; overflow: hidden; }
-#point-cloud-view canvas { display: block; width: 100%; height: 100%; }
 #point-cloud-empty { padding: 30px 16px; background: #edf1f0; color: #65726e; border-radius: 8px; }
 .point-cloud-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; font-size: 12px; color: #425953; }
 .point-cloud-legend span { display: flex; align-items: center; gap: 7px; }
 .point-cloud-legend i { width: 8px; height: 8px; border-radius: 50%; }
 #point-cloud-note { font-size: 11px; color: #7c8983; margin-bottom: 0; }
-@media (max-width: 640px) { .point-cloud-heading { align-items: flex-start; flex-direction: column; } .point-cloud-section { padding: 16px; } #point-cloud-view { height: 280px; } }
+@media (max-width: 640px) { .point-cloud-heading { align-items: flex-start; flex-direction: column; } .point-cloud-section { padding: 16px; } }
+
+.reference-video-button { margin-left: 8px; padding: 3px 7px; border-radius: 6px; cursor: pointer; color: #215f9a; background: #e7eff8; border: 1px solid #b6cbe0; }
+#reference-video-dialog { width: min(1000px, 90vw); border: 1px solid #ccd4dd; border-radius: 12px; padding: 20px; }
+#reference-video-dialog::backdrop { background: #102030aa; }
+.reference-video-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.reference-video-header h2 { font-size: 18px; }
+#reference-video { width: 100%; max-height: 70vh; background: #111; }
+#reference-video-dialog p { color: #536477; font-size: 14px; }
+
+.scene-layer-controls { display: flex; gap: 4px; pointer-events: auto; margin-left: auto; margin-right: 12px; }
+.scene-layer-controls button { opacity: .7; }
+.scene-layer-controls button[aria-pressed="true"] { color: #fff; background: #365e51; border-color: #365e51; opacity: 1; }
+.scene-layer-controls button:disabled { opacity: .4; cursor: default; }
+.scene-layer-controls { display: flex; gap: 4px; pointer-events: auto; margin-left: auto; margin-right: 10px; }
+.viewport-top .scene-layer-controls button { font-size: 12px; padding: 7px 10px; color: #586b62; }
+.viewport-top .scene-layer-controls button.active { background: #365c4c; color: white; border-color: #365c4c; }
+.viewport-top .scene-layer-controls button:disabled { opacity: .4; }
+.reward-section { padding: 20px 24px; border-top: 1px solid #d9dfdc; }
+.reward-section h2 { font-size: 18px; margin: 0 0 8px; }
+#reward-status { color: #51635a; font-size: 12px; }
+.reward-tolerances { display: flex; flex-wrap: wrap; gap: 20px; font-size: 12px; color: #4a6054; }
+.reward-tolerances input { width: 65px; padding: 5px; border: 1px solid #cbd5ce; border-radius: 4px; background: #fff; }
+.reward-help { font-size: 11px; color: #77877c; margin-bottom: 0; }
+.viewport-top .scene-layer-controls button[aria-pressed="true"] { color: white; }
+
+.reference-video-tabs { display: flex; gap: 8px; margin: 8px 0 12px; }
+.reference-video-tabs button { cursor: pointer; padding: 7px 12px; border: 1px solid #b6cbe0; border-radius: 6px; background: #f3f6fa; }
+.reference-video-tabs button[aria-pressed="true"] { color: #fff; background: #215f9a; }
+.reward-tolerances button { padding: 6px 10px; border: 1px solid #cbd5ce; border-radius: 4px; color: #365c4c; background: #fff; font: inherit; cursor: pointer; }
+.reward-tolerances button:disabled { opacity: .5; cursor: default; }

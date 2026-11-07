@@ -12,6 +12,8 @@ import mujoco
 from aiohttp import ClientSession, WSMsgType, web
 from yarl import URL
 
+from assembly_policy.so101.wowrobo_reward import RewardRegions
+
 from .banks import ResetCatalog
 from .point_cloud import PolicyPointCloud
 from .scene import display_xml, scene_poses, visual_scene
@@ -80,6 +82,7 @@ class ResetApplication:
         self.studio_python = Path(studio_python).expanduser().absolute()
         self.port = port
         self.point_cloud = PolicyPointCloud(self.model, self.scene_name)
+        self.reward_regions = RewardRegions(self.model, self.model_signature)
         self.version = 0
         self.snapshot = None
         self.studio_process = None
@@ -100,6 +103,7 @@ class ResetApplication:
         self.snapshot = dict(
             version=self.version,
             point_cloud=self.point_cloud.snapshot(self.data, entry),
+            reward_region=self.reward_regions.snapshot(self.data, entry),
             entry=entry,
             poses=scene_poses(self.model, self.data, self.scene),
             time=float(self.data.time),
@@ -157,6 +161,15 @@ class ResetApplication:
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise web.HTTPBadRequest(text="Unknown reset ID") from None
         return web.json_response(result)
+
+    async def reward_tolerance_handler(self, request):
+        self.check_origin(request)
+        try:
+            values = await request.json()
+            self.reward_regions.set_tolerances(values["position_mm"], values["orientation_degrees"])
+        except (KeyError, TypeError, ValueError):
+            raise web.HTTPBadRequest(text="Position must be 0.01–5 mm; orientation 0.1–10 degrees") from None
+        return web.json_response(dict(updated=True))
 
     @staticmethod
     def check_origin(request):
@@ -293,6 +306,7 @@ class ResetApplication:
         app.router.add_get("/api/scene", self.scene_handler)
         app.router.add_get("/api/state", self.state_handler)
         app.router.add_post("/api/select", self.select_handler)
+        app.router.add_post("/api/reward-tolerance", self.reward_tolerance_handler)
         app.router.add_post("/api/studio", self.studio_handler)
         app.router.add_get("/mujoco/{path:.*}", self.proxy)
         for path in ("/ui", "/state", "/model", "/drop"):

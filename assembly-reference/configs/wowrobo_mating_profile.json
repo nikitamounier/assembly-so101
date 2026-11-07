@@ -1,0 +1,235 @@
+{
+  "version": "wowrobo-legacy-mating-candidate-v2-hard-pin-stop",
+  "status": "isolated_candidate_requires_validation_not_hardware_calibrated",
+  "legacy_source": {
+    "path": "configs/so101_scene.json",
+    "sha256": "f4d1002adfb316f8611d464e88026d23c6629b0d7be4af8af8b29f2d667a80de",
+    "published_commits": [
+      "9a602be",
+      "85c006a",
+      "3617a72"
+    ]
+  },
+  "classes": {
+    "case_socket": {
+      "source_pair": "motor_base_volume",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0004,
+        0.8,
+        2
+      ],
+      "margin": 5e-05
+    },
+    "case_fork": {
+      "source_pair": "yoke_motor_mating",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    "horn_fork": {
+      "source_pair": "yoke_horn_mating",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    "firm_pin": {
+      "source_pair": "unchanged_current_pin_negative_guard",
+      "condim": 4,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ],
+      "margin": 0
+    },
+    "pin_case_hard_stop": {
+      "source_pair": "legacy_fastener_normal_response_only",
+      "condim": 4,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        5e-05
+      ],
+      "margin": 0
+    }
+  },
+  "steps": {
+    "cover": [
+      {
+        "geom1": "base_side_cover_printed_0__contact",
+        "geom2": "base_servo_printed_0__contact",
+        "contact_class": "case_socket",
+        "reason": "Source-preserving compliant rail/cover sliding interface, analogous to legacy base volume/rail fit; source contact sampling retained."
+      },
+      {
+        "geom1": "base_side_cover_printed_0__contact",
+        "geom2": "servo_1_case__contact",
+        "contact_class": "case_socket",
+        "reason": "Printed side cover receives servo case; legacy motor/base compliant volume analogue."
+      }
+    ],
+    "connector": [
+      {
+        "geom1": "shoulder_connector_printed_0__contact",
+        "geom2": "servo_1_horns__contact",
+        "contact_class": "horn_fork",
+        "reason": "Printed fork captures horn; exact legacy yoke/horn law, not a softened motor/socket substitute."
+      },
+      {
+        "geom1": "shoulder_connector_printed_0__contact",
+        "geom2": "servo_1_case__contact",
+        "contact_class": "case_fork",
+        "reason": "Printed fork to motor case; legacy yoke/motor law."
+      },
+      {
+        "geom1": "shoulder_connector_printed_1__contact",
+        "geom2": "servo_1_case__contact",
+        "contact_class": "case_fork",
+        "reason": "Other connector printed shell to case; same fork/case role."
+      }
+    ],
+    "pin": [
+      {
+        "geom1": "pin__contact",
+        "geom2": "base_servo_printed_0__contact",
+        "contact_class": "firm_pin",
+        "reason": "Custom pin is not the old analytic screw. Keep original firm contacts and source geometry; undersized-thread negative guard remains."
+      },
+      {
+        "geom1": "pin__contact",
+        "geom2": "servo_1_case__contact",
+        "contact_class": "pin_case_hard_stop",
+        "reason": "Restore exact old fastener normal law only; original unthreaded pin/case geometry and friction retained. Fresh-source barrier guard must remain blocked."
+      },
+      {
+        "geom1": "pin__contact",
+        "geom2": "servo_1_horns__contact",
+        "contact_class": "firm_pin",
+        "reason": "Custom pin is not the old analytic screw. Keep original firm contacts and source geometry; undersized-thread negative guard remains."
+      },
+      {
+        "geom1": "pin__contact",
+        "geom2": "base_side_cover_printed_0__contact",
+        "contact_class": "firm_pin",
+        "reason": "Custom pin is not the old analytic screw. Keep original firm contacts and source geometry; undersized-thread negative guard remains."
+      },
+      {
+        "geom1": "pin__contact",
+        "geom2": "shoulder_connector_printed_0__contact",
+        "contact_class": "firm_pin",
+        "reason": "Custom pin is not the old analytic screw. Keep original firm contacts and source geometry; undersized-thread negative guard remains."
+      },
+      {
+        "geom1": "pin__contact",
+        "geom2": "shoulder_connector_printed_1__contact",
+        "contact_class": "firm_pin",
+        "reason": "Custom pin is not the old analytic screw. Keep original firm contacts and source geometry; undersized-thread negative guard remains."
+      }
+    ],
+    "upper": [
+      {
+        "geom1": "servo_2_case__contact",
+        "geom2": "shoulder_connector_printed_0__contact",
+        "contact_class": "case_socket",
+        "reason": "Servo case into real printed socket/rim; legacy motor/base volume law; retain both actual receiving printed constituents."
+      },
+      {
+        "geom1": "servo_2_case__contact",
+        "geom2": "shoulder_connector_printed_1__contact",
+        "contact_class": "case_socket",
+        "reason": "Servo case into real printed socket/rim; legacy motor/base volume law; retain both actual receiving printed constituents."
+      }
+    ],
+    "final": [
+      {
+        "geom1": "servo_3_case__contact",
+        "geom2": "upper_arm_module_printed_0__contact",
+        "contact_class": "case_fork",
+        "reason": "Held case into printed receiving fork, legacy yoke/motor nonlinear law. Keep other incidental contacts firm."
+      }
+    ]
+  },
+  "additional_contact_geometry": [],
+  "patch_decision": "No new patches: current generic bidirectional original vertices/centroids already detect all reviewed mating/rim contacts. Copying old Hiwonder patch coordinates or duplicating support would be unjustified. Containment and coverage audits saved per step.",
+  "targets": "Reuse newly measured actual-feature alignment configurations. Do not copy Hiwonder numerical lift/yaw offsets to different RobotStudio/WowRobo components.",
+  "limits": [
+    "Source CAD/SDF fields unchanged.",
+    "Unlisted pairs retain original firm generic settings; full material exclusion remains enabled.",
+    "Pin pairs retain firm profile, with exact legacy hard normal response only on the pin/case pair; no virtual hole, resizing or analytic screw substitution.",
+    "Lower impedance is an inherited provisional compliance approximation, not measured plastic deformation."
+  ],
+  "pin_hard_stop_source": {
+    "path": "assembly_policy/so101/scene.py",
+    "sha256": "afbb47ec7a530e250d2980658ea3fe12d460e3dbf03a68d4613f097f476a59ac",
+    "normal_parameters": "Original male/female analytic-fastener contact geoms: solref .001 1, solimp .99 .999 .00005. No analytic thread geometry transferred.",
+    "validation": "v1 generic firm pin normal law passed stored-stall but failed fresh20N at20/2mm per second; exact legacy hard normal variant passed both fresh approaches with source guard unchanged. Failed v1 controls preserved."
+  }
+}

@@ -10,6 +10,9 @@ def visual_scene(model):
     geoms = []
     meshes = {}
     for i in range(model.ngeom):
+        # Authoring guides are not physical parts; hide them in both renderers.
+        if (model.geom(i).name or "").endswith(("_grip_center", "_grip_tangent")):
+            continue
         kind = int(model.geom_type[i])
         if model.geom_group[i] > 2 or kind == int(mujoco.mjtGeom.mjGEOM_SDF):
             continue

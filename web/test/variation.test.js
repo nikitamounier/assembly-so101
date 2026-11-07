@@ -7,6 +7,25 @@ import {
 } from "../src/variation.js";
 import { filterEntries } from "../src/catalog.js";
 
+test("equilibrium hold evidence does not imply task admission", () => {
+  const equilibrium = {
+    equilibrium_pass: true,
+    prescribed_bracket_angle: false,
+    hold_seconds: 0.5,
+    part_displacement_m: { bracket: 0.00004 },
+    part_rotation_degrees: { bracket: 0.02 },
+  };
+  const variation = { kind: "nominal", equilibrium };
+  assert.match(variationStatus(variation), /task admission pending/);
+  const fields = new Map(variationFields(variation));
+  assert.equal(fields.get("BRACKET ARTICULATION"), "Passive · no angle target");
+  assert.equal(fields.get("MAXIMUM PART MOTION"), "0.04 mm");
+  assert.match(
+    variationStatus({ equilibrium: { equilibrium_pass: false } }),
+    /Hold test failed/,
+  );
+});
+
 test("candidate and rejected status remain separate from physical training admission", () => {
   assert.match(variationStatus({ training_eligible: false }), /pending/);
   assert.match(variationStatus({ candidate_rejected: true }), /Rejected/);

@@ -1,0 +1,45 @@
+{
+  "version": "wowrobo-cover-source-fit-v1",
+  "status": "simulation_fixture_verified_hardware_and_training_qualification_pending",
+  "geometry_unchanged": true,
+  "contact_law": "unchanged legacy_mapped profile; no new compliance or friction override",
+  "receiver_body": "base_servo",
+  "piece": "base_side_cover",
+  "free_joint": "base_side_cover_free",
+  "reference_relative_position_m": [
+    4.967998925986608e-05,
+    -0.0001892085988288274,
+    0.0
+  ],
+  "reference_relative_quaternion_wxyz": [
+    0.9999994443108824,
+    -0.0008755665281933098,
+    -0.0003670464496648908,
+    -0.0004582991216854302
+  ],
+  "insertion_axis_receiver_local": [
+    0,
+    0,
+    -1
+  ],
+  "stand_off_m": 0.055,
+  "derivation": {
+    "method": "Small rigid translation/rotation optimization of untouched source-mesh bidirectional SDF fit, fixed target Z; independent exact source-triangle audit",
+    "search_parameters_center_mm_euler_world_deg": [
+      0.09558428397240604,
+      -0.0724101040815575,
+      0.04210645216585555,
+      -0.1003132527354798,
+      -0.052554096287162885
+    ],
+    "original_nominal_full_source_overlap_max_m": 0.00027831891088743986,
+    "candidate_full_path_source_sampled_overlap_max_m": 0.00015234884292523912,
+    "source_audit_pose_count": 111,
+    "source_audit_axial_spacing_m": 0.0005,
+    "source_audit_max_samples_each_direction": 1024,
+    "scope": "Finite source-triangle material-overlap check, not a zero-clearance certificate or hardware calibration."
+  },
+  "force_limit_N": 20.0,
+  "material_overlap_limit_m": 0.0005,
+  "qualification_limits": "Helper/receiver remain fixtures in insertion probe; do not infer physical gripper retention or training admission from a guided depth crossing."
+}

@@ -1,0 +1,7 @@
+from pathlib import Path
+from types import SimpleNamespace
+import json,numpy as np
+from assembly_policy.so101.wowrobo_contact_backend import load_backend,set_surface_mode
+from assembly_policy.so101.wowrobo_insertion_guide import build_guide
+from scripts.validate_wowrobo_fit_profile import run_case
+ROOT=Path.cwd();OUT=ROOT/'outputs/insertion-fix-20261107/cover/rigid_candidate';OUT.mkdir(parents=True,exist_ok=True);a=json.loads((ROOT/'outputs/linear-insertion-aligned-20261107/cover/alignment.json').read_text());search=json.loads((ROOT/'outputs/insertion-fix-20261107/cover/rigid-fit-search.json').read_text());qa=a['qpos_address'];final=np.array(search['root_position_world_m']+search['root_quaternion_wxyz']);start=final.copy();start[:3]+=np.array([0,0,.055]);a['start_qpos'][qa:qa+7]=start.tolist();a['reference_qpos'][qa:qa+7]=final.tolist();a['aligned_root_qpos']=start.tolist();a['final_root_qpos']=final.tolist();a['fit_pose_search']=search;a['prior_geometric_audit_superseded_for_this_candidate']=True;alignment=OUT/'alignment.json';alignment.write_text(json.dumps(a,indent=2)+'\n');load_backend(ROOT/'outputs/linear-insertion-updated-20261107/grids/manifest.json');set_surface_mode(1);build_guide(ROOT/'outputs/linear-insertion-updated-20261107/scene.xml',alignment,OUT/'guide-scene.xml','base_side_cover');args=SimpleNamespace(step='cover',seconds=4.,release_seconds=.5);r=run_case(args,OUT,OUT,a,{'qpos':np.array([0.]),'qvel':np.array([0.])},'legacy_mapped',20.);print('DONE',r['final_drive_axial_mm'],r['guided_relaxation_change_mm'])

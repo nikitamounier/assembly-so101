@@ -1,0 +1,673 @@
+{
+  "schema_version": 1,
+  "profile": "wowrobo-photo-reset-sequence-20261107-v3",
+  "source_layout_profile": "wowrobo-initial-layout-20261107-v5",
+  "scope": "25 active authored review candidates; original IDs retained; NOT physics-qualified training resets",
+  "states": [
+    {
+      "id": "00_loose",
+      "task": "initial_scene",
+      "phase": "loose",
+      "active_arm": null,
+      "left_role": "nearby_open",
+      "right_role": "nearby_open",
+      "reference_images": [
+        "IMG_1624",
+        "IMG_1623"
+      ],
+      "evidence": "photo-backed",
+      "description": "All five pickup pieces loose; retain corrected tangent and nearest-grasp-end layout.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "01_cover_pickup",
+      "task": "base_side_cover",
+      "phase": "pickup",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "nearby_open",
+      "reference_images": [
+        "IMG_1622"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left has just picked up the side cover by its two opposed exterior side walls near the flange end. Right remains open nearby.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "03_cover_aligned",
+      "task": "base_side_cover",
+      "phase": "aligned",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "nearby_open",
+      "reference_images": [
+        "IMG_1622"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left holds the cover above the base with the slide features aligned, maintaining the exterior-wall pinch. Right remains open nearby.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "04_cover_entry",
+      "task": "base_side_cover",
+      "phase": "entry",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "nearby_open",
+      "reference_images": [
+        "IMG_1621"
+      ],
+      "evidence": "photo-backed",
+      "description": "Cover has just entered its slide; left maintains the exterior-wall pinch and right remains open nearby.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "05_cover_near",
+      "task": "base_side_cover",
+      "phase": "near_seated",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "nearby_open",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Cover is almost seated with a short final slide remaining; maintain the exterior-wall pinch.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "07_connector_pickup",
+      "task": "shoulder_connector",
+      "phase": "pickup",
+      "active_arm": "right",
+      "left_role": "nearby_open",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1618"
+      ],
+      "evidence": "photo-backed",
+      "description": "Right holds the connector by its opposed socket side faces as in IMG_1617. Left is open and naturally withdrawn from the preceding cover-placement pose.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "08_connector_aligned",
+      "task": "shoulder_connector",
+      "phase": "aligned",
+      "active_arm": "right",
+      "left_role": "nearby_open",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1617"
+      ],
+      "evidence": "photo-backed",
+      "description": "Right holds the connector by its socket side faces, horizontally aligned with the side of the base. Left remains open in its post-cover retreat pose.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "09_connector_entry",
+      "task": "shoulder_connector",
+      "phase": "entry",
+      "active_arm": "right",
+      "left_role": "nearby_open",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1616"
+      ],
+      "evidence": "photo-backed",
+      "description": "Right starts sliding the connector onto the base while maintaining the socket-side grasp. Left stays open and withdrawn from the insertion corridor.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "10_connector_near",
+      "task": "shoulder_connector",
+      "phase": "near_seated",
+      "active_arm": "right",
+      "left_role": "nearby_open",
+      "right_role": "grasp_active",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Connector is almost seated with a short horizontal push remaining. Right maintains its socket-side grasp; left stays open nearby.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "12_pin_pickup",
+      "task": "assembly_pin",
+      "phase": "pickup",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_connector",
+      "reference_images": [
+        "IMG_1615"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left has picked up the pin by its larger upper grip cylinder. The thin shaft remains clear; right keeps holding the connector.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "13_pin_aligned",
+      "task": "assembly_pin",
+      "phase": "aligned",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_connector",
+      "reference_images": [
+        "IMG_1614"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left pinches the larger upper cylinder with the thin shaft pointing down above the pivot hole. Right keeps holding the connector.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "14_pin_half",
+      "task": "assembly_pin",
+      "phase": "half_inserted",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_connector",
+      "reference_images": [
+        "IMG_1613"
+      ],
+      "evidence": "photo-backed",
+      "description": "Pin shaft is partially inserted, approximately halfway in the authored reference. Left holds the larger upper cylinder and right holds the connector; completion remains unearned.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "15_pin_near",
+      "task": "assembly_pin",
+      "phase": "near_seated",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_connector",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Pin is nearly seated with a short final insertion remaining. Left holds its larger upper cylinder; right retains the connector hold.",
+      "terminal": false,
+      "training_reset_candidate": true
+    },
+    {
+      "id": "17_left_support",
+      "task": "upper_arm_module",
+      "phase": "support_transition",
+      "active_arm": null,
+      "left_role": "hold_base_assembly",
+      "right_role": "hold_connector",
+      "reference_images": [
+        "IMG_1613",
+        "IMG_1612"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left releases the pin and acquires the photo-matched base/connector support before right lets go. Both assembly-support holds coexist during this transition.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold."
+    },
+    {
+      "id": "18_upper_floor_grasp",
+      "task": "upper_arm_module",
+      "phase": "floor_grasp",
+      "active_arm": "right",
+      "left_role": "hold_base_assembly",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1612"
+      ],
+      "evidence": "photo-backed",
+      "description": "Right pinches opposing exposed faces of the black servo 2 case as in IMG_1612 while the rest of the link stays on the table. Preserve the approved component orientation. Left holds the base/connector assembly.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold. Case pinch corrected; printed link remains about23mm above table at this internal servo angle."
+    },
+    {
+      "id": "20_upper_transport",
+      "task": "upper_arm_module",
+      "phase": "transport",
+      "active_arm": "right",
+      "left_role": "hold_base_assembly",
+      "right_role": "grasp_active",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Right transports the upper-arm module with a black servo 2 case grasp. Left retains its base/connector support.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold."
+    },
+    {
+      "id": "21_upper_far_side",
+      "task": "upper_arm_module",
+      "phase": "far_side_supported",
+      "active_arm": "right",
+      "left_role": "hold_base_assembly",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1611"
+      ],
+      "evidence": "photo-backed",
+      "description": "The opposite non-servo end rests on the receiver edge as in IMG_1611, forming the supported triangle. Right holds the black servo 2 case above its pocket, with the servo directed straight down into that pocket. Left holds the base/connector assembly.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold."
+    },
+    {
+      "id": "22_upper_half",
+      "task": "upper_arm_module",
+      "phase": "half_inserted",
+      "active_arm": "right",
+      "left_role": "hold_base_assembly",
+      "right_role": "grasp_active",
+      "reference_images": [
+        "IMG_1610"
+      ],
+      "evidence": "photo-backed",
+      "description": "Servo 2 is partly inserted while the opposite end remains resting on the receiver edge. Right holds the black case and keeps it aligned with the pocket; left retains base/connector support.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold."
+    },
+    {
+      "id": "23_upper_near",
+      "task": "upper_arm_module",
+      "phase": "near_seated",
+      "active_arm": "right",
+      "left_role": "hold_base_assembly",
+      "right_role": "grasp_active",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Servo 2 is almost seated with a small final insertion remaining. The opposite end stays on the receiver edge and the case remains pocket-aligned; left keeps supporting the base/connector assembly.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold."
+    },
+    {
+      "id": "25_right_support",
+      "task": "forearm_module",
+      "phase": "support_transition",
+      "active_arm": null,
+      "left_role": "hold_base_assembly",
+      "right_role": "hold_upper_arm",
+      "reference_images": [
+        "IMG_1610",
+        "IMG_1609"
+      ],
+      "evidence": "photo-backed",
+      "description": "Right holds the installed upper-arm piece with both fingers clear of the assembly, as in IMG_1609. Left retains its base/connector support until the right support is established. Keep the next insertion corridor open.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Left support is lower than the photographed cover-wall hold. Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    },
+    {
+      "id": "26_final_floor_grasp",
+      "task": "forearm_module",
+      "phase": "floor_grasp",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_upper_arm",
+      "reference_images": [
+        "IMG_1609"
+      ],
+      "evidence": "photo-backed",
+      "description": "Left pinches the exposed black servo 3 case on the final two-servo module while the module is on the table, using the wrist orientation shown in IMG_1609. Right holds the installed upper arm.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    },
+    {
+      "id": "28_final_transport",
+      "task": "forearm_module",
+      "phase": "transport",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_upper_arm",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Left transports the final module with a black servo 3 case grasp. Right maintains the installed upper-arm support.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    },
+    {
+      "id": "29_final_far_side",
+      "task": "forearm_module",
+      "phase": "far_side_supported",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_upper_arm",
+      "reference_images": [
+        "IMG_1608"
+      ],
+      "evidence": "photo-backed",
+      "description": "The opposite end rests on the installed upper arm as in IMG_1608. Left holds the black servo 3 case aligned with the receiving pocket in the tilted upper-arm frame. Right keeps holding the installed upper arm.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    },
+    {
+      "id": "30_final_half",
+      "task": "forearm_module",
+      "phase": "half_inserted",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_upper_arm",
+      "reference_images": [
+        "IMG_1607"
+      ],
+      "evidence": "photo-backed",
+      "description": "Servo 3 is partly inserted along the tilted receiving pocket. The opposite end stays supported on the upper arm; left holds the black case and right maintains upper-arm support.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    },
+    {
+      "id": "31_final_near",
+      "task": "forearm_module",
+      "phase": "near_seated",
+      "active_arm": "left",
+      "left_role": "grasp_active",
+      "right_role": "hold_upper_arm",
+      "reference_images": [],
+      "evidence": "inferred intermediate",
+      "description": "Servo 3 is nearly seated with a small final insertion remaining along the tilted pocket. Keep its opposite end resting on the upper arm and preserve right-arm support.",
+      "terminal": false,
+      "training_reset_candidate": true,
+      "photo_review_note": "Right support uses an inverted wrist to keep the final insertion corridor clear; wrist roll differs from the photos."
+    }
+  ],
+  "rules": {
+    "other_arm_is_part_of_state": true,
+    "both_arms_policy_controlled": true,
+    "support_not_scripted_during_rollout": true,
+    "prerequisites_assembled": true,
+    "pickup_tangent_constraint": "applies to loose pickup poses, not to subsequent contact-constrained insertion poses",
+    "support_continuity": "Right holds the connector throughout pin insertion. Acquire left base/connector support before right releases it to fetch the upper arm. Preserve left support through upper-arm installation. Establish right support of the installed upper-arm piece before left releases its prior support to fetch the final module. Any grip relocation requires an explicit supported transition.",
+    "terminal_examples": "reference-only, excluded from training reset candidates",
+    "reward": "Fully seated is the completion target; entry/half/near must remain nonterminal. Exact tolerances and reward implementation require physical qualification.",
+    "pin": "vertical shaft downward at hole; halfway and near-seated are separate states",
+    "variation": "After nominal grasp/contact/clearance qualification, coherent variation within each family; do not randomize support arms independently.",
+    "supported_insertions": "In states 21-24 and 29-32 the far side remains in real surface contact with the receiver edge while the held servo is aligned with the receiving pocket. The upper-arm case is directed down into its base/connector pocket. The final-piece case follows the installed upper-arm receiver frame, which is tilted in world coordinates. Fold/tilt is derived from those contacts and mating constraints, not from preset world angles.",
+    "servo_pickup_orientation": "Keep the approved object orientation in states 18 and 19. Both fingers pinch the exposed black case faces shown in IMG_1612, with one finger in the open link window and the other outside the servo end. A grasp on the printed yoke is not an acceptable substitute. Loose-placement yaw and the actual finger-closure face normal are recorded separately.",
+    "boundary_review": "Check both fingers, palm and wrist camera against the grasped part and surrounding assembly in every updated state, especially state 25. Report rejected poses; an IK center residual or coarse SDF clearance alone does not establish a valid grasp.",
+    "photo_evidence": "Images establish qualitative pose, visible contact and both-arm roles. Exact insertion fractions, completion, loads, grasp forces and camera calibration are not measured by these photographs."
+  },
+  "qualification": {
+    "current": "review-candidate authoring and geometric checking; no physical training admission",
+    "required": [
+      "registered receiving-pocket and slide frames, far-end contacts and actual pin hole",
+      "reachable joint poses with the approved object orientations preserved in states 18/19",
+      "two opposed finger contacts on the intended black case, exterior cover walls, connector sides or upper pin cylinder",
+      "per-state finger, palm, wrist-camera, arm/link, table and surrounding-assembly boundary checks with current model/state identities",
+      "far-end resting contact and receiver-relative servo alignment throughout states 21-24 and 29-32",
+      "loaded grasp retention, receiver stability and continuous assembly support during both handoffs",
+      "entry, partial and near-seated starts remain nonterminal under the actual reward",
+      "bounded-action rollout and fine-step insertion validation before training admission"
+    ],
+    "no_new_clamps_or_welds": true
+  },
+  "grasp_requirements": {
+    "base_side_cover": {
+      "reference_images": [
+        "IMG_1622",
+        "IMG_1621"
+      ],
+      "target": "opposed exterior side walls near flange end",
+      "inset_from_end_m": 0.018
+    },
+    "shoulder_connector": {
+      "reference_images": [
+        "IMG_1617"
+      ],
+      "target": "opposed exterior sides of upper motor socket",
+      "inactive_left": "open and withdrawn from cover placement, not an unrelated reaching pose"
+    },
+    "assembly_pin": {
+      "reference_images": [
+        "IMG_1615",
+        "IMG_1614"
+      ],
+      "target": "larger upper grip cylinder only",
+      "diameter_m": 0.012,
+      "local_grip_z_m": 0.014,
+      "thin_shaft_excluded": true
+    },
+    "upper_arm_module": {
+      "reference_images": [
+        "IMG_1612"
+      ],
+      "target": "exposed black servo 2 front/back case faces; exclude printed yoke",
+      "preserve_piece_orientation_in_states": [
+        18,
+        19
+      ],
+      "pinch_face_normal_piece_local": [
+        0,
+        1,
+        0
+      ],
+      "case_only": true,
+      "photo_contact_detail": "One finger passes into the open link window and the other contacts the opposite exposed black case face, as in IMG_1612."
+    },
+    "native_jaw_frame": {
+      "span_axis": "gripperframe Z",
+      "asymmetric_gap_center": "measured from fixed and moving jaw mesh sections",
+      "physical_qualification": false
+    },
+    "forearm_module": {
+      "reference_images": [
+        "IMG_1609",
+        "IMG_1608"
+      ],
+      "target": "exposed servo 3 front/back case faces",
+      "pinch_face_normal_piece_local": [
+        0,
+        1,
+        0
+      ],
+      "wrist_correction_degrees": 90,
+      "alignment": "relative to the tilted upper-arm receiving pocket, not world vertical",
+      "receiver_contact": "The opposite end remains on the actual upper-arm receiver surface through states 29-32, including all far-end cases and brackets when checking first contact."
+    },
+    "support_holds": {
+      "left_after_pin": "photo-matched hold on the base/connector assembly, preserved throughout upper-arm installation and clear of its far-end resting edge",
+      "right_after_upper": "photo-matched hold on the installed upper-arm piece, preserved throughout final-piece installation and clear of the incoming module",
+      "continuity": "keep the assembly supported during any change of grasp; do not infer that one specific CAD axis or one unverified rail point is mandated by the photos"
+    }
+  },
+  "photo_audit": {
+    "reference_images_reviewed": [
+      "IMG_1624",
+      "IMG_1623",
+      "IMG_1622",
+      "IMG_1621",
+      "IMG_1620",
+      "IMG_1618",
+      "IMG_1617",
+      "IMG_1616",
+      "IMG_1615",
+      "IMG_1614",
+      "IMG_1613",
+      "IMG_1612",
+      "IMG_1611",
+      "IMG_1610",
+      "IMG_1609",
+      "IMG_1608",
+      "IMG_1607"
+    ],
+    "latest_corrections": {
+      "cover": "outside side-wall pinch",
+      "connector": "socket-side pinch and natural open left-arm retreat after cover placement",
+      "pin": "larger upper cylinder pinched; thin shaft clear",
+      "upper_pickup": "black servo case pinched with component orientation preserved",
+      "upper_insert": "far end stays on the receiver edge while held case points down into its pocket",
+      "final_pickup": "wrist rotated relative to the rejected grasp to pinch black servo case",
+      "final_insert": "held case aligns with the tilted receiver pocket while the opposite end remains supported",
+      "passive_arms": "actual support role and boundary clearance form part of each reset"
+    },
+    "uncertainty": "qualitative image audit only; exact geometry, insertion depth, force and dynamics need separate verification"
+  },
+  "authoring_support_seeds": {
+    "hold_base_assembly": {
+      "layout_profile": "wowrobo-initial-layout-20261107-v5",
+      "joint_names": [
+        "shoulder_pan",
+        "shoulder_lift",
+        "elbow_flex",
+        "wrist_flex",
+        "wrist_roll",
+        "gripper"
+      ],
+      "joint_positions": [
+        -0.05646868490445639,
+        0.7935292133064231,
+        0.9740059236432198,
+        -1.6547730295168304,
+        -1.585105808672532,
+        0.5100295640914325
+      ],
+      "target": "base_servo_printed_0",
+      "guide_base_cad_m": [
+        0,
+        0.025,
+        0.025
+      ],
+      "qualification": "nominal geometric authoring seed; independently sampled exact-clear through21-24 incl camera; no loaded grasp validation"
+    },
+    "hold_upper_arm": {
+      "layout_profile": "wowrobo-initial-layout-20261107-v5",
+      "joint_positions": [
+        0.09715587102195511,
+        0.23346683634650267,
+        1.180591030333403,
+        -1.6534372892683502,
+        1.740482992236513,
+        0.6814656481836963
+      ],
+      "target": "upper_arm_module_printed_0",
+      "guide_piece_cad_m": [
+        0.0020978668306432056,
+        -0.045,
+        0.12
+      ],
+      "span_piece_local": [
+        -1,
+        0,
+        0
+      ],
+      "approach_piece_local": [
+        0.09611463496602551,
+        0.8012921502434243,
+        0.590502215832944
+      ],
+      "qualification": "Nominal geometric authoring seed; wide exterior servo-end fork walls. Inverted wrist clears future insertion; differs from photographed wrist roll. Requires state-matched native audit; no loaded grasp validation.",
+      "retain_native_reviewed_pose": true,
+      "receiver_body": "upper_arm_module",
+      "receiver_position_world_m": [
+        0.042965577594204725,
+        1.7389709340284928e-05,
+        -0.006073289324732278
+      ],
+      "receiver_rotation_world": [
+        -1.6653345369377348e-16,
+        -0.9230640668710143,
+        -0.38464623805718356,
+        0.9999999999999999,
+        -2.220446049250313e-16,
+        -2.7755575615628914e-17,
+        -2.7755575615628914e-17,
+        -0.38464623805718356,
+        0.9230640668710144
+      ],
+      "native_review": {
+        "pad_surface_distances_m": [
+          0.000150229,
+          0.000160204
+        ],
+        "opposing_surface_normal_dots": [
+          -0.99647,
+          -0.94866
+        ],
+        "sampled_boundary_max_penetration_m": 0.0,
+        "target_native_pad_gap_m": 0.00015,
+        "coverage": "Full native inner-pad vertices/triangle centers; independent helper/camera/table audit through25\u201332 at0.5mm limit",
+        "qualification": "Near-contact geometry only; force/friction retention unqualified"
+      }
+    },
+    "hold_connector": {
+      "layout_profile": "wowrobo-initial-layout-20261107-v5",
+      "joint_positions": [
+        -0.07163513210578332,
+        0.33155489337475924,
+        1.1132932254079442,
+        -1.4492982158773695,
+        -1.5469722548153955,
+        0.6123683085968459
+      ],
+      "target": "shoulder_connector_printed_1",
+      "retain_native_reviewed_pose": true,
+      "receiver_body": "shoulder_connector",
+      "receiver_position_world_m": [
+        -0.006077849999999996,
+        0.0,
+        -0.0003943
+      ],
+      "receiver_rotation_world": [
+        2.220446049250313e-16,
+        -1.0,
+        0.0,
+        1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "native_review": {
+        "pad_surface_distances_m": [
+          0.00049,
+          0.000801
+        ],
+        "approach_pitch_error_degrees": 0.255,
+        "sampled_boundary_max_penetration_m": 0.0,
+        "coverage": "Full inner-pad native surface proof; all helper/camera boundaries12\u201317 and pin lookahead verified",
+        "qualification": "Authored horizontal connector hold; force/friction retention unqualified"
+      },
+      "qualification": "Internal seated connector grasp prerequisite; public11removed per user"
+    }
+  },
+  "connector_opening_margins_by_phase_radians": {},
+  "connector_gripper_pose": {
+    "reference_images": [
+      "IMG_1617",
+      "IMG_1616"
+    ],
+    "approach_piece_local": [
+      0,
+      1,
+      0
+    ],
+    "requirement": "Side pinch with finger length parallel to horizontal push direction; retain seated hold through pin and left-support transition.",
+    "maximum_pitch_error_degrees": 3,
+    "preferred_maximum_planar_yaw_degrees": 10
+  },
+  "held_body_sag_degrees_by_stage": {
+    "20_upper_transport": 8,
+    "28_final_transport": 8
+  },
+  "removed_stage_ids": [
+    "02_cover_transport",
+    "06_cover_seated",
+    "11_connector_seated",
+    "16_pin_seated",
+    "19_upper_lift",
+    "24_upper_seated",
+    "27_final_lift",
+    "32_final_seated"
+  ]
+}

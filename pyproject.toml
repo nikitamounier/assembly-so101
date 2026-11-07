@@ -15,7 +15,7 @@ assets = ["rhino3dm==8.35.0", "open3d==0.20.0"]
 modal = ["modal==1.6.3"]
 sail = ["sail==0.17.2"]
 dev = ["pytest>=9", "ruff>=0.17"]
-viewer = ["aiohttp==3.14.5", "mujoco-studio==4.0.0"]
+viewer = ["aiohttp==3.14.5", "mujoco-studio==4.0.0", "torch>=2.11,<3"]
 
 [project.scripts]
 so101-train = "assembly_policy.train:main"

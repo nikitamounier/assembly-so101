@@ -16,6 +16,66 @@ import numpy as np
 from .wowrobo_equilibrium import integration_state, settle_and_hold
 
 
+class MinimumResetValidator:
+    """Initial-bank admission: material clearance and retained grasps; motion allowed."""
+
+    def __init__(self, validator, *, settle_seconds=0.08, hold_seconds=0.2):
+        self.validator = validator
+        self.settle_seconds = settle_seconds
+        self.hold_seconds = hold_seconds
+
+    def __getattr__(self, name):
+        return getattr(self.validator, name)
+
+    def validate(self, stage, source, metadata):
+        from .wowrobo_physical_resets import ASSEMBLY_ATTACHMENTS
+
+        # Retain source mesh/Rtree caches; bound only memoized query results.
+        # Recomputing the same geometric query does not alter admission.
+        if len(self.validator.audit._direction_cache) > 20000:
+            self.validator.audit._direction_cache.clear()
+        m = self.model
+        d = mujoco.MjData(m)
+        d.qpos[:] = source.qpos
+        d.qvel[:] = source.qvel
+        d.ctrl[:] = source.ctrl
+        for name, _, _, _, first in ASSEMBLY_ATTACHMENTS:
+            d.eq_active[m.equality(name).id] = int(stage.split("_")[0]) >= first
+        original = integration_state(m, d)
+        original_ctrl = d.ctrl.copy()
+        state, controls, witness, end = settle_and_hold(
+            self.validator,
+            stage,
+            d,
+            settle_seconds=self.settle_seconds,
+            hold_seconds=self.hold_seconds,
+            minimum_only=True,
+            friction_multipliers=metadata.get("friction_multipliers"),
+            pickup_requires_hold=metadata.get("pickup_requires_hold", True),
+        )
+        passed = witness["minimum_validity_pass"]
+        return {
+            "training_eligible": passed,
+            "physical_admission_pass": passed,
+            "valid_for_initial_reset_bank": passed,
+            "rejection_reasons": witness["minimum_validity_rejection_reasons"],
+            "metrics": {"minimum_validity": witness},
+            "minimum_validity": witness,
+            "minimum_reset_required": True,
+            "stationarity_required": False,
+            "profile": self.profile,
+            "physics_profile": self.profile,
+            "validation_model_signature": self.profile["model_sha256"],
+            "state_spec": int(mujoco.mjtState.mjSTATE_INTEGRATION),
+            "physical_input_state": original,
+            "physical_input_controls": original_ctrl,
+            "settled_state": state,
+            "settled_controls": controls,
+            "qualification": "Initial reset minimum: no unintended overlaps and held parts retained; motion allowed",
+            "replay_end_sha256": hashlib.sha256(end.tobytes()).hexdigest(),
+        }
+
+
 class EquilibriumRequiredValidator:
     """Adapt the existing bank validator without changing its source physics."""
 

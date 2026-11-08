@@ -23,7 +23,7 @@ so101-compute = "assembly_policy.compute.__main__:main"
 so101-viewer = "assembly_policy.viewer.__main__:main"
 
 [tool.setuptools.package-data]
-"assembly_policy.viewer" = ["static/*", "static/assets/*"]
+"assembly_policy.viewer" = ["static/*", "static/assets/*", "static/reference/*"]
 
 [tool.setuptools.packages.find]
 include = ["assembly_policy*", "scripts*"]

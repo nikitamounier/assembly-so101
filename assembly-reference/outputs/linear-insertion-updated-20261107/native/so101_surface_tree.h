@@ -89,27 +89,46 @@ static void tree_surface(const mjModel* m,const mjData* d,int visual,int target,
     for(const auto& point:tree.points) sample_surface(m,d,visual,target,point.data(),direction,threshold,bins);
     return;
   }
-  std::vector<int> candidates;
-  std::vector<int> stack;
+  // Compose once per pair. Leaf evaluation retains sample_surface's original
+  // arithmetic; this transform is used only for conservative rejection bounds.
+  mjtNum rotation[9], translation[3], delta[3];
+  const mjtNum* source_rotation=d->geom_xmat+9*visual;
+  const mjtNum* target_rotation=d->geom_xmat+9*target;
+  mju_sub3(delta,d->geom_xpos+3*visual,d->geom_xpos+3*target);
+  mju_mulMatTVec3(translation,target_rotation,delta);
+  for(int row=0;row<3;++row) for(int col=0;col<3;++col) {
+    rotation[3*row+col]=0;
+    for(int k=0;k<3;++k)
+      rotation[3*row+col]+=target_rotation[3*k+row]*source_rotation[3*k+col];
+  }
+  // Separate per-thread scratch from the model cache. Collision callbacks do
+  // not recurse into tree_surface; clear sizes but retain allocated capacity.
+  static thread_local std::vector<int> candidates, stack;
+  candidates.clear();stack.clear();
   if(!tree.nodes.empty()) stack.push_back(0);
   while(!stack.empty()) {
     const auto& node=tree.nodes[stack.back()];stack.pop_back();
     if(profile_surface) surface_stats[3]++;
-    mjtNum lo[3]={INFINITY,INFINITY,INFINITY},hi[3]={-INFINITY,-INFINITY,-INFINITY};
+    mjtNum lo[3],hi[3],center[3],extent[3];
     double scale=1;
-    for(int k=0;k<3;++k) scale+=fabs(node.lo[k])+fabs(node.hi[k])+
-      fabs(d->geom_xpos[3*visual+k])+fabs(d->geom_xpos[3*target+k]);
-    // Bound affine extrema with the same two transforms used by sample_surface.
-    for(int corner=0;corner<8;++corner) {
-      mjtNum p[3],world[3],delta[3],local[3];
-      for(int k=0;k<3;++k) p[k]=(corner&(1<<k))?node.hi[k]:node.lo[k];
-      mju_mulMatVec3(world,d->geom_xmat+9*visual,p);
-      mju_addTo3(world,d->geom_xpos+3*visual);
-      mju_sub3(delta,world,d->geom_xpos+3*target);
-      mju_mulMatTVec3(local,d->geom_xmat+9*target,delta);
-      for(int k=0;k<3;++k){lo[k]=std::min(lo[k],local[k]);hi[k]=std::max(hi[k],local[k]);}
+    for(int k=0;k<3;++k) {
+      center[k]=node.lo[k]/2+node.hi[k]/2;
+      extent[k]=node.hi[k]/2-node.lo[k]/2;
+      scale+=fabs(node.lo[k])+fabs(node.hi[k])+
+        fabs(d->geom_xpos[3*visual+k])+fabs(d->geom_xpos[3*target+k]);
     }
-    double pad=1e-12+128*std::numeric_limits<mjtNum>::epsilon()*scale;
+    // For rigid transforms, |R|*extent encloses every transformed corner.
+    // The generous roundoff guard covers composition, center/extent rounding,
+    // and the uncomposed two-transform arithmetic used by sample_surface.
+    double pad=1e-12+256*std::numeric_limits<mjtNum>::epsilon()*scale;
+    for(int row=0;row<3;++row) {
+      mjtNum c=translation[row],e=0;
+      for(int col=0;col<3;++col) {
+        c+=rotation[3*row+col]*center[col];
+        e+=fabs(rotation[3*row+col])*extent[col];
+      }
+      lo[row]=c-e;hi[row]=c+e;
+    }
     const mjtNum* box=m->geom_aabb+6*target;
     bool outside=false;
     for(int k=0;k<3;++k) {

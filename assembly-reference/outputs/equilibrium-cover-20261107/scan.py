@@ -22,6 +22,6 @@ for stage in ['01_cover_pickup','03_cover_aligned','04_cover_entry']:
   fit=least_squares(fun,q0[qs],bounds=(np.maximum(m.jnt_range[jids,0]+1e-7,q0[qs]-.05),np.minimum(m.jnt_range[jids,1]-1e-7,q0[qs]+.05)),max_nfev=50,ftol=1e-10,xtol=1e-10,gtol=1e-10)
   for delta in [0.,-.01,-.02,-.03,-.04]:
    d.qpos[:]=q0;d.qpos[qs]=fit.x;d.qpos[jaw]=q0[jaw]+delta;d.qacc_warmstart[:]=0;mujoco.mj_forward(m,d);ld=v._loaded_pads(d,[('left','base_side_cover')])['left']
-   r={'stage':stage,'shift_m':shift,'jaw_delta':delta,'loads':ld,'fit':float(np.linalg.norm(fun(fit.x))),'left_q':np.r_[fit.x,d.qpos[jaw]].tolist(),'min_contact':float(min(d.contact.dist[:d.ncon]))}
+   r={'stage':stage,'shift_m':shift,'jaw_delta':delta,'loads':ld,'fit':float(np.linalg.norm(fun(fit.x))),'left_q':np.r_[fit.x,d.qpos[jaw]].tolist(),'min_contact':float(min(d.contact.dist[:d.ncon])) if d.ncon else None}
    print(r,flush=True);results.append(r)
 (OUT/'scan.json').write_text(json.dumps(results,indent=2)+'\n')

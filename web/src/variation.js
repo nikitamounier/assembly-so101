@@ -7,6 +7,13 @@ const quantity = (value, suffix = "") =>
 
 export function variationStatus(variation) {
   if (!variation) return null;
+  const validity =
+    variation.minimum_validity ||
+    variation.reference_validation?.minimum_validity;
+  if (validity?.minimum_validity_pass === true)
+    return "Valid reset · held parts retained";
+  if (validity?.minimum_validity_pass === false)
+    return "Needs repair · overlap or lost grasp";
   if (variation.training_eligible === true)
     return "Physically qualified training reset";
   const equilibrium =
@@ -15,6 +22,7 @@ export function variationStatus(variation) {
     return "Hold test failed · not an equilibrium reset";
   if (equilibrium?.equilibrium_pass === true)
     return "Equilibrium hold passed · task admission pending";
+  if (equilibrium) return "Hold test pending · equilibrium not verified";
   if (variation.kind === "nominal") {
     if (variation.candidate_rejected || variation.rejected)
       return "Reference pose · validation failed";
@@ -37,6 +45,28 @@ export function variationFields(variation) {
     ],
     ["VALIDATION", variationStatus(variation)],
   ];
+  const validity =
+    variation.minimum_validity ||
+    variation.reference_validation?.minimum_validity;
+  if (validity) {
+    fields.push(
+      [
+        "INITIAL RESET CHECK",
+        validity.minimum_validity_pass
+          ? "Passed · no unintended overlaps; held parts retained"
+          : (validity.minimum_validity_rejection_reasons || []).join("; "),
+      ],
+      ["MOTION", "Allowed · brackets unpowered"],
+      ["RETENTION REPLAY", quantity(validity.hold_seconds, " s")],
+    );
+    for (const [side, fraction] of Object.entries(
+      validity.bilateral_contact_fraction || {},
+    ))
+      fields.push([
+        `${side.toUpperCase()} GRIP CONTACT`,
+        quantity(100 * fraction, "% of replay"),
+      ]);
+  }
   const equilibrium =
     variation.equilibrium || variation.reference_validation?.equilibrium;
   if (equilibrium) {
@@ -72,9 +102,11 @@ export function variationFields(variation) {
       ],
       [
         "HOLD TEST",
-        equilibrium.equilibrium_pass
-          ? "Passed · task admission remains separate"
-          : (equilibrium.rejection_reasons || []).join("; "),
+        equilibrium.equilibrium_pass === null
+          ? "Not checked yet"
+          : equilibrium.equilibrium_pass
+            ? "Passed · task admission remains separate"
+            : (equilibrium.rejection_reasons || []).join("; "),
       ],
     );
   }

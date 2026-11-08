@@ -9,9 +9,10 @@ from assembly_policy.so101.wowrobo_obs import GRIPS, WOW_TASKS, PointTables
 
 
 class PolicyPointCloud:
-    def __init__(self, model, scene):
+    def __init__(self, model, scene, point_config=None):
         self.model, self.scene = model, scene
         self.tables = None
+        self.point_config = point_config
 
     def snapshot(self, data, entry):
         task = (entry.get("stage") or {}).get("task", entry["task"])
@@ -24,7 +25,7 @@ class PolicyPointCloud:
                     preview=True,
                 )
             if self.tables is None:
-                self.tables = PointTables(self.model)
+                self.tables = PointTables(self.model, config=self.point_config)
             tasks, names = WOW_TASKS, self.tables.names
         else:
             return dict(
@@ -70,6 +71,8 @@ class PolicyPointCloud:
                 dict(name="Receiving assembly", start=128, count=256, color="#178d84"),
                 dict(name="Fingers", start=384, count=64, color="#567ddb"),
             ],
+            sampling_budget=self.tables.receiver_budget[task],
+            receiver_body_counts=self.tables.mating_counts[task],
             observation_signature=self.tables.signature,
             tensor_sha256=hashlib.sha256(tensor.tobytes()).hexdigest(),
             state_id=entry["id"],

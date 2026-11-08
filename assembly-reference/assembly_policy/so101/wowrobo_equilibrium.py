@@ -70,6 +70,7 @@ def settle_and_hold(
     gravity_preload=False,
     friction_multipliers=None,
     pickup_requires_hold=True,
+    minimum_only=False,
 ):
     """Close actual jaws, settle freely, then replay precisely the saved controls.
 
@@ -92,6 +93,11 @@ def settle_and_hold(
         gravity_preload_controls(m, d) if gravity_preload else [0.0] * m.nu
     )
     authored = pose_snapshot(m, d)
+    pad_loads = (
+        validator._loaded_pads_source_extent
+        if minimum_only and hasattr(validator, "_loaded_pads_source_extent")
+        else validator._loaded_pads
+    )
     pairs = validator._grip_pairs(stage)
     if pickup_requires_hold is False:
         active = validator.definitions[stage].get("active_arm")
@@ -112,7 +118,7 @@ def settle_and_hold(
     trace = []
     for step in range(round(settle_seconds / m.opt.timestep)):
         if close_jaws:
-            loads = validator._loaded_pads(d, pairs)
+            loads = pad_loads(d, pairs)
             for side, (a, initial) in jaws.items():
                 if min(loads[side].values()) < 0.10:
                     d.ctrl[a] = max(
@@ -134,6 +140,21 @@ def settle_and_hold(
     saved = integration_state(m, d)
     ctrl = d.ctrl.copy()
     hold_start = pose_snapshot(m, d)
+    initial_boundary = validator._native_audit(d)
+    grip_reference = {}
+    for side, target in pairs:
+        if target == "upper_arm_module":
+            case_load = pad_loads(d, [(side, "target_servo_2_pivot")])[side]
+            if min(case_load.values()) >= 0.01:
+                target = "target_servo_2_pivot"
+        site = m.site(side + "_gripperframe").id
+        body = m.body(target).id
+        frame = d.site_xmat[site].reshape(3, 3)
+        grip_reference[side] = (
+            target,
+            frame.T @ (d.xpos[body] - d.site_xpos[site]),
+            frame.T @ d.xmat[body].reshape(3, 3),
+        )
     hinge_start = np.array(
         [d.joint(f"target_servo_{i}_shaft").qpos[0] for i in range(1, 5)]
     )
@@ -144,7 +165,14 @@ def settle_and_hold(
     }
     max_velocity = 0.0
     hinge_motion = np.zeros(4)
-    for _ in range(round(hold_seconds / m.opt.timestep)):
+    bilateral_samples = {side: 0 for side, _ in pairs}
+    grasp_motion = {side: 0.0 for side, _ in pairs}
+    grasp_rotation = {side: 0.0 for side, _ in pairs}
+    boundary_failures = (
+        [float(d.time)] if initial_boundary["candidate_rejected"] else []
+    )
+    hold_steps = max(1, round(hold_seconds / m.opt.timestep))
+    for step in range(hold_steps):
         physical_split_step(m, d, friction)
         if not np.isfinite(d.qpos).all() or not np.isfinite(d.qvel).all():
             raise RuntimeError(f"{stage}: nonfinite hold")
@@ -159,9 +187,32 @@ def settle_and_hold(
             [d.joint(f"target_servo_{i}_shaft").qpos[0] for i in range(1, 5)]
         )
         hinge_motion = np.maximum(hinge_motion, np.abs(angles - hinge_start))
-        for side, loads in validator._loaded_pads(d, pairs).items():
+        for side, loads in pad_loads(d, pairs).items():
+            bilateral_samples[side] += min(loads.values()) >= 0.01
             for pad, value in loads.items():
                 loads_min[side][pad] = min(loads_min[side][pad], value)
+        for side, (target, local_position, local_rotation) in grip_reference.items():
+            site = m.site(side + "_gripperframe").id
+            body = m.body(target).id
+            frame = d.site_xmat[site].reshape(3, 3)
+            grasp_motion[side] = max(
+                grasp_motion[side],
+                float(
+                    np.linalg.norm(
+                        frame.T @ (d.xpos[body] - d.site_xpos[site]) - local_position
+                    )
+                ),
+            )
+            grasp_rotation[side] = max(
+                grasp_rotation[side],
+                rotation_degrees(frame.T @ d.xmat[body].reshape(3, 3), local_rotation),
+            )
+        if (
+            minimum_only
+            and (step + 1) % max(1, round(0.05 / m.opt.timestep)) == 0
+            and validator._native_audit(d)["candidate_rejected"]
+        ):
+            boundary_failures.append(float(d.time))
         max_velocity = max(max_velocity, float(np.max(np.abs(d.qvel))))
     controls_unchanged = np.array_equal(ctrl, d.ctrl)
     boundary = validator._native_audit(d)
@@ -181,24 +232,60 @@ def settle_and_hold(
         if anchor in authored
         else 0.0
     )
-    reasons = []
-    if max(displacement.values()) > 0.00025:
+    minimum_reasons = []
+    if any(value > 0.005 for value in grasp_motion.values()) or any(
+        value > 10.0 for value in grasp_rotation.values()
+    ):
+        minimum_reasons.append("held_part_escaped_grip")
+    if any(count / hold_steps < 0.8 for count in bilateral_samples.values()):
+        minimum_reasons.append("held_part_not_captured_by_both_pads")
+    if boundary_failures or boundary["candidate_rejected"]:
+        minimum_reasons.append("unintended_material_overlap")
+    if not controls_unchanged:
+        minimum_reasons.append("hold_controls_changed")
+    reasons = [] if not minimum_only else minimum_reasons.copy()
+    if not minimum_only and max(displacement.values()) > 0.00025:
         reasons.append("part_moves_during_hold")
-    if max(rotation.values()) > 0.25 or np.max(np.rad2deg(hinge_motion)) > 0.25:
+    if not minimum_only and (
+        max(rotation.values()) > 0.25 or np.max(np.rad2deg(hinge_motion)) > 0.25
+    ):
         reasons.append("bracket_or_part_rotates_during_hold")
-    if max_velocity > 0.05:
+    if not minimum_only and max_velocity > 0.05:
         reasons.append("nonzero_hold_velocity")
-    if any(min(loads.values()) < 0.01 for loads in loads_min.values()):
+    if not minimum_only and any(
+        min(loads.values()) < 0.01 for loads in loads_min.values()
+    ):
         reasons.append("unloaded_finger_pad")
-    if anchor_motion > 0.01 or anchor_rotation > 5.0:
+    # A support handoff has no active incoming grasp. Future loose modules
+    # must settle freely; their authored airborne shape is not a stage target.
+    stage_anchor_required = definition.get("active_arm") is not None
+    if (
+        not minimum_only
+        and stage_anchor_required
+        and (anchor_motion > 0.01 or anchor_rotation > 5.0)
+    ):
         reasons.append("authored_stage_not_preserved")
-    if boundary["candidate_rejected"]:
+    if not minimum_only and boundary["candidate_rejected"]:
         reasons.append("native_boundaries")
     if not controls_unchanged:
         reasons.append("hold_controls_changed")
     report = {
         "stage": stage,
-        "equilibrium_pass": not reasons,
+        "equilibrium_pass": (not reasons) if not minimum_only else None,
+        "minimum_validity_pass": not minimum_reasons,
+        "minimum_validity_rejection_reasons": minimum_reasons,
+        "valid_for_initial_reset_bank": not minimum_reasons,
+        "stationarity_required": not minimum_only,
+        "finger_contact_region": "original_source_mesh_extent"
+        if minimum_only
+        else "legacy_pad_window",
+        "grasp_translation_drift_m": grasp_motion,
+        "grasp_rotation_drift_degrees": grasp_rotation,
+        "grip_anchor_by_side": {side: row[0] for side, row in grip_reference.items()},
+        "bilateral_contact_fraction": {
+            side: count / hold_steps for side, count in bilateral_samples.items()
+        },
+        "boundary_failure_times": boundary_failures,
         "rejection_reasons": reasons,
         "settle_seconds": settle_seconds,
         "hold_seconds": hold_seconds,
@@ -210,6 +297,7 @@ def settle_and_hold(
         "minimum_pad_normal_force_N": loads_min,
         "active_feature_settling_translation_m": anchor_motion,
         "active_feature_settling_rotation_degrees": anchor_rotation,
+        "active_feature_stage_anchor_required": stage_anchor_required,
         "controls_unchanged_during_hold": controls_unchanged,
         "gravity_preload_control_offset_rad": control_preload,
         "friction_multipliers": friction,
@@ -221,7 +309,9 @@ def settle_and_hold(
         "state_sha256": hashlib.sha256(saved.tobytes()).hexdigest(),
         "control_sha256": hashlib.sha256(ctrl.tobytes()).hexdigest(),
         "state_spec": int(mujoco.mjtState.mjSTATE_INTEGRATION),
-        "training_eligible": False,
-        "qualification": "Equilibrium check only; task/reward admission remains separate",
+        "training_eligible": bool(minimum_only and not minimum_reasons),
+        "qualification": "Minimum initial-reset validity; movement is allowed"
+        if minimum_only
+        else "Equilibrium check only; task/reward admission remains separate",
     }
     return saved, ctrl, report, integration_state(m, d)

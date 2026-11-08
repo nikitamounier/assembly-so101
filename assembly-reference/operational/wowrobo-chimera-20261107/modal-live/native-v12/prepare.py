@@ -1,0 +1,25 @@
+"""Freeze only the qualified exact collision artifact, after native80-step live proof."""
+from pathlib import Path
+import json,hashlib,shutil,importlib.util
+ROOT=Path(__file__).resolve().parent.parent;REL=ROOT/'native-v12';AD=REL/'assembly-so101';C=REL/'robotics-assembly-3.0';OLD=ROOT/'robotics-assembly-3.0';EX=ROOT/'native-contact-optimization-20261107/swept'
+assert json.loads((ROOT/'native-v10/live-proof.json').read_text())['status']=='PASS';assert not (REL/'prepared.json').exists()
+checkpoint_proof=json.loads((EX/'ppo-checkpoint-parity.json').read_text());assert checkpoint_proof['exact_continuation'] and all(checkpoint_proof['checks'].values());oracle=json.loads((EX/'oracle-parity.json').read_text());assert oracle['exact_parity'] and oracle['arrays_compared']>=1235
+receipt=json.loads((EX/'candidate/native/build-receipt.json').read_text());assert receipt['identity']['patched_contact_sha256']=='f421706fc4f35a3efab57bd5130ee70fcd02caa91268cef91a28e89cf1fd5c07'
+assert hashlib.sha256((EX/'backend-exact.py').read_bytes()).hexdigest()=='31b8df30fb9b7d3c290f38498f0b0928679b973bd928d96e8ae9d70c08e0aec7'
+assert hashlib.sha256((EX/'wowrobo_contact_cache.h').read_bytes()).hexdigest()==receipt['identity']['optimization_header_sha256']=='0276423a2ade1d1cbafca88850fab793843c5713e4d26a0943dedd9824fa5d99'
+for n,h in receipt['identity']['source_hashes'].items():assert hashlib.sha256((EX/'candidate/plugin'/n).read_bytes()).hexdigest()==h,n
+for name in ('assembly_policy','configs'):shutil.copytree(ROOT/'native-v10/assembly-so101'/name,AD/name,ignore=shutil.ignore_patterns('__pycache__'),dirs_exist_ok=True)
+shutil.copytree(EX/'candidate/plugin',AD/'plugin',dirs_exist_ok=True);src=C/'assembly_policy/so101';src.mkdir(parents=True,exist_ok=True)
+for name in ('wowrobo_physical_resets.py','wowrobo_rollout_friction.py','wowrobo_rollout_friction.cc','wowrobo_friction.py'):shutil.copy2(OLD/'assembly_policy/so101'/name,src/name)
+shutil.copy2(EX/'backend-exact.py',src/'wowrobo_contact_backend.py');shutil.copy2(EX/'wowrobo_contact_cache.h',src/'wowrobo_contact_cache.h')
+s=(ROOT/'native-v10/wowrobo_training_runtime.py').read_text();needle='ROOT = Path('+repr(str(OLD))+')';assert s.count(needle)==1;s=s.replace(needle,'ROOT = Path('+repr(str(C))+')');needle='        identity = hashlib.sha256(';assert s.count(needle)==1
+s=s.replace(needle,"        kernel_paths = [ROOT/'assembly_policy/so101/wowrobo_contact_backend.py', ROOT/'assembly_policy/so101/wowrobo_contact_cache.h', *sorted((ROOT.parent/'assembly-so101/plugin').glob('*'))]\n        kernel_source = b''.join(p.name.encode()+b'\\0'+p.read_bytes() for p in kernel_paths if p.is_file())\n"+needle);s=s.replace('            + friction_source\n','            + friction_source\n            + kernel_source\n');(REL/'wowrobo_training_runtime.py').write_text(s)
+p=AD/'assembly_policy/wowrobo/runtime.py';s=p.read_text().replace('_canonical_wowrobo_training_runtime_v10','_canonical_wowrobo_training_runtime_v12').replace('native-v10/wowrobo_training_runtime.py','native-v12/wowrobo_training_runtime.py');p.write_text(s)
+oldbank=ROOT/'native-v10/training-accepted-v10';bank=REL/'training-accepted-v12';bank.mkdir(exist_ok=True);meta=json.loads((oldbank/'manifest.json').read_text())
+spec=importlib.util.spec_from_file_location('_native12_factory',REL/'wowrobo_training_runtime.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod);m,_,identity=mod.load_native(meta['profile_path']);assert m.opt.timestep==.0005
+stop_margins=[float(m.pair_margin[i]) for i in range(m.npair) if (m.pair(i).name or '').startswith('passive_motor_stop_')];assert len(stop_margins)==3 and all(v==0 for v in stop_margins),stop_margins
+build=C/'outputs/linear-insertion-updated-20261107/native';built=json.loads((build/'build-receipt.json').read_text());assert built['identity']['patched_contact_sha256']==receipt['identity']['patched_contact_sha256'];assert built['identity']['source_hashes']==receipt['identity']['source_hashes'];assert built['identity']['optimization_header_sha256']==receipt['identity']['optimization_header_sha256']
+meta.update(model_signature=identity,source_native_runtime_signature='34d224d4edff266369b3f1322baf80013c0daf09599a9eeb8751c6270a88ff92',collision_qualification='exact source recipe/parity/oracle frozen; production-worker+RSS gate pending',source_kernel_artifact=str(EX/'candidate'))
+for p in oldbank.glob('*.npz'):shutil.copy2(p,bank/p.name)
+(bank/'manifest.json').write_text(json.dumps(meta,indent=2)+'\n');paths=[p for folder in (AD,src,bank) for p in folder.rglob('*') if p.is_file() and '__pycache__' not in p.parts]+[REL/'wowrobo_training_runtime.py']
+x=dict(status='PREPARED',physics_signature=identity,physics_backend='wowrobo-native-source-sdf',timestep=.0005,substeps=80,control_dt=.04,source_recipe_exact=True,lower_budgets_excluded=True,kernel_build=built,files={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(paths))});(REL/'prepared.json').write_text(json.dumps(x,indent=2)+'\n');print(json.dumps({k:v for k,v in x.items() if k not in ('files','kernel_build')}),flush=True)

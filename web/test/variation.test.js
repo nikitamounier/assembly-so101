@@ -143,3 +143,19 @@ test("repaired references keep actual rejection status and CAD revision visible"
   assert.equal(fields.get("CAD REVISION"), "final-common-v1");
   assert.equal(fields.get("REJECTION REASONS"), "support gap");
 });
+
+test("minimum reset validity allows motion and shows real retention evidence", () => {
+  const variation = {
+    minimum_validity: {
+      minimum_validity_pass: true,
+      hold_seconds: 0.2,
+      stationarity_required: false,
+    },
+  };
+  assert.match(variationStatus(variation), /Valid reset/);
+  assert.match(new Map(variationFields(variation)).get("MOTION"), /Allowed/);
+  assert.match(
+    variationStatus({ minimum_validity: { minimum_validity_pass: false } }),
+    /Needs repair/,
+  );
+});

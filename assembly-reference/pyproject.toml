@@ -15,6 +15,7 @@ cad-review = ["cadquery==2.8.0", "trimesh==5.2.0", "rtree==1.4.1", "embreex==4.4
 wowrobo-contact-review = ["mujoco==4.0.0", "mujoco-core==4.0.0", "mujoco-studio==4.0.0", "trimesh==5.2.0", "libigl==2.6.3", "rtree==1.4.1", "embreex==4.4.0.post1"]
 so101 = ["mujoco==3.17.0", "rhino3dm==8.35.0", "trimesh==5.2.0", "open3d==0.20.0", "libigl==2.6.3", "psutil>=5.9"]
 so101-gpu = ["mujoco-warp==3.17.0", "warp-lang==1.19.0"]
+wowrobo-gpu = ["mujoco==4.0.0", "mujoco-warp==4.0.0", "warp-lang==1.19.0"]
 
 [tool.setuptools.packages.find]
 include = ["assembly_policy*"]

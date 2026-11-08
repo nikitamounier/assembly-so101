@@ -74,6 +74,19 @@ def build(args):
         ROOT / "assembly_policy/so101/wowrobo_randomization.py",
         ROOT / "assembly_policy/so101/wowrobo_bank.py",
     ]
+    generator_dependencies = [
+        ROOT / "assembly_policy/so101" / name
+        for name in (
+            "wowrobo_reset_framework.py",
+            "wowrobo_photo_resets.py",
+            "wowrobo_grasps.py",
+            "wowrobo_boundaries.py",
+            "wowrobo_supported_poses.py",
+        )
+    ]
+    guarded_paths.extend(generator_dependencies)
+    if config.get("grasp_library"):
+        guarded_paths.append(ROOT / config["grasp_library"])
     guarded_paths += asset_inputs
     reference_inputs = [
         args.nominal / name
@@ -98,6 +111,7 @@ def build(args):
                 "wowrobo_pin_registration",
                 "wowrobo_equilibrium",
                 "wowrobo_equilibrium_admission",
+                "wowrobo_housing_registration",
             ]
         ]
         guarded_paths.append(
@@ -164,11 +178,25 @@ def build(args):
             exclude_internal_servo_contacts=bool(
                 config.get("exclude_internal_servo_contacts", False)
             ),
+            source_mesh_table_contacts=bool(
+                config.get("source_mesh_table_contacts", False)
+            ),
+            center_motor_housings=bool(config.get("center_motor_housings", False)),
             helper_grid_profile=(ROOT / config["helper_grid_profile"])
             if config.get("helper_grid_profile")
             else None,
         )
-        if config.get("equilibrium_required", False):
+        if config.get("minimum_reset_required", False):
+            from assembly_policy.so101.wowrobo_equilibrium_admission import (
+                MinimumResetValidator,
+            )
+
+            validator = MinimumResetValidator(
+                validator,
+                settle_seconds=args.settle_seconds,
+                hold_seconds=args.hold_seconds,
+            )
+        elif config.get("equilibrium_required", False):
             from assembly_policy.so101.wowrobo_equilibrium_admission import (
                 EquilibriumRequiredValidator,
             )
@@ -194,6 +222,9 @@ def build(args):
         ROOT / "assembly_policy/so101/wowrobo_randomization.py",
         ROOT / "assembly_policy/so101/wowrobo_bank.py",
     ]
+    sources.extend(generator_dependencies)
+    if config.get("grasp_library"):
+        sources.append(ROOT / config["grasp_library"])
     sources.extend(asset_inputs)
     sources.extend(reference_inputs)
     if config.get("cad_revision"):
@@ -214,6 +245,9 @@ def build(args):
                     "wowrobo_physical_resets",
                     "wowrobo_friction",
                     "wowrobo_contact_backend",
+                    "wowrobo_equilibrium",
+                    "wowrobo_equilibrium_admission",
+                    "wowrobo_housing_registration",
                 ]
             ]
         )
@@ -304,7 +338,7 @@ def build(args):
     by_key = {(r["stage"], r["split"], r["slot"], r["attempt"]): r for r in rows}
     seen = {r["sample_identity"] for r in rows}
     seen_inputs = {r.get("input_sample_identity", r["sample_identity"]) for r in rows}
-    auditor = NativeBoundaryAudit(m)
+    auditor = NativeBoundaryAudit(m) if validator is None else None
     spec = mujoco.mjtState.mjSTATE_FULLPHYSICS
 
     def publish(status="running"):
@@ -404,8 +438,17 @@ def build(args):
                     data, meta = sampler.sample(
                         stage, seed, split=split, difficulty=args.difficulty
                     )
-                    audit = auditor.audit(data)
-                    if config.get("cad_revision"):
+                    audit = (
+                        auditor.audit(data)
+                        if auditor
+                        else {
+                            "candidate_rejected": False,
+                            "candidate_rejection_reasons": [],
+                            "not_performed": True,
+                            "reason": "Physical validator owns native start, interval and end boundary checks",
+                        }
+                    )
+                    if config.get("cad_revision") and auditor is not None:
                         target_bounds = auditor._bounds(data, auditor.targets)
                         floor = min(
                             (
@@ -596,6 +639,8 @@ def build(args):
                         "ACCEPT" if eligible else ("REJECT" if reasons else "PENDING"),
                         flush=True,
                     )
+                    if len(rows) % 10 == 0:
+                        publish()
                     if eligible or not args.full:
                         break
                     if args.max_total_attempts and len(rows) >= args.max_total_attempts:

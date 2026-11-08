@@ -104,7 +104,9 @@ def test_full_runner_resamples_counts_only_admitted_and_resumes(tmp_path, monkey
             pass
 
         def audit(self, *args, **kwargs):
-            return {"candidate_rejected": False, "candidate_rejection_reasons": []}
+            raise AssertionError(
+                "Physical admission must not repeat an ignored preliminary screen"
+            )
 
     class Validator:
         def __init__(self, **kwargs):
@@ -156,6 +158,14 @@ def test_full_runner_resamples_counts_only_admitted_and_resumes(tmp_path, monkey
     assert manifest["model_signature"] == digest(xml.encode())
     with np.load(args.output / "qualified/00_loose_train.npz") as bank:
         assert len(bank["states"]) == 2
+        assert bank["friction_categories"].tolist() == [
+            "finger_part",
+            "part_table",
+            "part_part",
+        ]
+        assert bank["friction_multipliers"].shape == (2, 3)
+        np.testing.assert_array_equal(bank["friction_multipliers"][:, 1:], 1.0)
+        assert np.all(bank["friction_multipliers"][:, 0] > 1.0)
     original_calls = len(calls)
     assert script.build(args) == 0
     assert len(calls) == original_calls

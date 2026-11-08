@@ -10,7 +10,7 @@ from assembly_policy.so101.wowrobo_equilibrium import rotation_degrees, settle_a
 from assembly_policy.so101.wowrobo_physical_resets import ASSEMBLY_ATTACHMENTS, PARTS
 
 
-def toy(*, gravity, height):
+def toy(*, gravity, height, floor=False):
     bodies = []
     for i, name in enumerate(PARTS):
         children = ""
@@ -28,8 +28,9 @@ def toy(*, gravity, height):
         f'<weld name="{name}" body1="{a}" body2="{b}" active="false"/>'
         for name, a, b, _, _ in ASSEMBLY_ATTACHMENTS
     )
+    table = '<geom type="plane" size="2 2 .1"/>' if floor else ""
     m = mujoco.MjModel.from_xml_string(
-        f'<mujoco><option timestep=".001" gravity="0 0 {gravity}" integrator="implicitfast"/><worldbody>{"".join(bodies)}</worldbody><equality>{equalities}</equality></mujoco>'
+        f'<mujoco><option timestep=".001" gravity="0 0 {gravity}" integrator="implicitfast"/><worldbody>{table}{"".join(bodies)}</worldbody><equality>{equalities}</equality></mujoco>'
     )
     d = mujoco.MjData(m)
     validator = SimpleNamespace(
@@ -75,3 +76,30 @@ def test_rotation_difference_and_invalid_windows():
     v, d = toy(gravity=0, height=0.1)
     with pytest.raises(ValueError, match="positive"):
         settle_and_hold(v, "00_loose", d, hold_seconds=0)
+
+
+def test_support_handoff_allows_future_loose_part_to_find_equilibrium():
+    v, d = toy(gravity=-9.81, height=0.1, floor=True)
+    v.definitions["00_loose"] = {"task": "forearm_module", "active_arm": None}
+    _, _, report, _ = settle_and_hold(
+        v, "00_loose", d, settle_seconds=1.5, hold_seconds=0.2
+    )
+    assert report["active_feature_settling_translation_m"] > 0.08
+    assert report["equilibrium_pass"]
+    v.definitions["00_loose"]["active_arm"] = "left"
+    _, _, report, _ = settle_and_hold(
+        v, "00_loose", d, settle_seconds=1.5, hold_seconds=0.2
+    )
+    assert report["rejection_reasons"] == ["authored_stage_not_preserved"]
+
+
+def test_minimum_validity_allows_motion_without_claiming_equilibrium():
+    v, d = toy(gravity=-9.81, height=1.0)
+    _, _, report, _ = settle_and_hold(
+        v, "00_loose", d, settle_seconds=0.01, hold_seconds=0.05, minimum_only=True
+    )
+    assert max(report["part_displacement_m"].values()) > 0.01
+    assert report["minimum_validity_pass"]
+    assert report["valid_for_initial_reset_bank"]
+    assert report["equilibrium_pass"] is None
+    assert not report["stationarity_required"]

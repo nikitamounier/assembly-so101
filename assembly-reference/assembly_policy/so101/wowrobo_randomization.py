@@ -14,6 +14,11 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from assembly_policy.so101.wowrobo_photo_resets import ROOT, PhotoResetSequence
+from assembly_policy.so101.wowrobo_reset_framework import (
+    check_library,
+    difficulty_for_slot,
+    world_grasp,
+)
 
 
 class WowRoboRandomizer:
@@ -25,18 +30,36 @@ class WowRoboRandomizer:
             if not isinstance(config, dict)
             else config
         )
-        self.assets = Path(assets or self.config.get(
-            "component_assets", "assets_local/wowrobo/components-v2"
-        ))
+        self.assets = Path(
+            assets
+            or self.config.get("component_assets", "assets_local/wowrobo/components-v2")
+        )
         if not self.assets.is_absolute():
             self.assets = ROOT / self.assets
-        self.nominal_bank = Path(nominal_bank or self.config.get(
-            "nominal_bank", "assets_local/wowrobo/photo-resets-v3"
-        ))
+        self.nominal_bank = Path(
+            nominal_bank
+            or self.config.get("nominal_bank", "assets_local/wowrobo/photo-resets-v3")
+        )
         if not self.nominal_bank.is_absolute():
             self.nominal_bank = ROOT / self.nominal_bank
         self.sequence = PhotoResetSequence(self.assets)
         self.model = self.sequence.model
+        if self.config.get("use_nominal_model", False):
+            self.model = mujoco.MjModel.from_xml_string(
+                (self.nominal_bank / "scene.xml").read_text()
+            )
+            self.sequence.model = self.model
+            self.sequence.layout.model = self.model
+        self.grasp_library = None
+        if self.config.get("grasp_library"):
+            path = Path(self.config["grasp_library"])
+            path = path if path.is_absolute() else ROOT / path
+            self.grasp_library = check_library(json.loads(path.read_text()))
+            signature = hashlib.sha256(
+                (self.nominal_bank / "scene.xml").read_bytes()
+            ).hexdigest()
+            if self.grasp_library["model_signature"] != signature:
+                raise ValueError("Grasp library and nominal model identities differ")
         self.definitions = {d["id"]: d for d in self.sequence.plan["states"]}
         self.nominal_receipts = {
             d["id"]: d
@@ -46,8 +69,16 @@ class WowRoboRandomizer:
         if manifest_path.exists():
             manifest = json.loads(manifest_path.read_text())
             expected = manifest.get("component_manifest_sha256")
-            if expected and expected != hashlib.sha256((self.assets / "manifest.json").read_bytes()).hexdigest():
-                raise ValueError("Reference bank CAD assets do not match selected component manifest")
+            if (
+                expected
+                and expected
+                != hashlib.sha256(
+                    (self.assets / "manifest.json").read_bytes()
+                ).hexdigest()
+            ):
+                raise ValueError(
+                    "Reference bank CAD assets do not match selected component manifest"
+                )
 
     def restore(self, stage_id):
         data = mujoco.MjData(self.model)
@@ -83,12 +114,7 @@ class WowRoboRandomizer:
         effective_seed = int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
         rng = np.random.default_rng(effective_seed)
         if difficulty is None:
-            if split == "train":
-                ordinal = int(seed) % 640
-                band = 0 if ordinal < 256 else 1 if ordinal < 512 else 2
-                difficulty = rng.uniform(band / 3, (band + 1) / 3)
-            else:
-                difficulty = (int(seed) % 128 + rng.random()) / 128
+            difficulty = difficulty_for_slot(self.config["sampling"], seed, split, rng)
         level = float(difficulty)
         if not 0 <= level <= 1:
             raise ValueError("difficulty must lie in [0,1]")
@@ -147,6 +173,9 @@ class WowRoboRandomizer:
                 attached.append(task)
             for piece in attached:
                 self._transform(data, piece, r, t)
+            if self.config.get("minimum_reset_required", False):
+                address = m.joint("target_servo_1_shaft").qposadr[0]
+                data.qpos[address] = old.qpos[address] + np.deg2rad(swivel)
             receipt["transforms"].append(
                 {
                     "kind": "connector_swivel",
@@ -258,7 +287,12 @@ class WowRoboRandomizer:
                 axial = (rng.uniform(*stand) - nominal) * level
             evidence = self.nominal_receipts[stage_id].get("mating")
             if evidence and self.config.get("cad_revision"):
-                evidence = dict(evidence, nominal_support_gap_m=self.nominal_receipts[stage_id].get("support_contact", {}).get("gap_m", 0.0))
+                evidence = dict(
+                    evidence,
+                    nominal_support_gap_m=self.nominal_receipts[stage_id]
+                    .get("support_contact", {})
+                    .get("gap_m", 0.0),
+                )
             if evidence:
                 # Rotate around the far-end contact, counterrotating the held
                 # case so its receiving-axis alignment is preserved.
@@ -282,7 +316,9 @@ class WowRoboRandomizer:
                 self._transform(data, task, r, center - r @ center)
             if evidence and receipt["resting_contact"].get("support_pass") is False:
                 receipt["candidate_rejected"] = True
-                receipt.setdefault("rejection_reasons", []).append("Far-end support gap exceeds 0.1 mm")
+                receipt.setdefault("rejection_reasons", []).append(
+                    "Far-end support gap exceeds 0.1 mm"
+                )
             if evidence:
                 projection_limit = cfg.get(
                     "lateral_radius_m", cfg.get("rest_slide_m", 0.001)
@@ -349,7 +385,13 @@ class WowRoboRandomizer:
                     "hold_upper_arm": "upper_arm_module",
                 }[role]
             )
-            support_override = self.nominal_receipts[stage_id].get("support_grasp_by_side", {}).get(side) if role != "grasp_active" else None
+            support_override = (
+                self.nominal_receipts[stage_id]
+                .get("support_grasp_by_side", {})
+                .get(side)
+                if role != "grasp_active"
+                else None
+            )
             if support_override:
                 piece = support_override["piece"]
             servo = (
@@ -366,14 +408,49 @@ class WowRoboRandomizer:
             target_p = data.xpos[anchor] + change @ (
                 old.site_xpos[site] - old.xpos[anchor]
             )
-            spec = dict(support_override["grasp_calibration"]) if support_override else dict(
-                seq.side_grasps[piece]
-                if role == "grasp_active" or role == "hold_connector"
-                else seq.installed_base_grip[1]
-                if role == "hold_base_assembly"
-                else seq.installed_upper_grip[1]
+            spec = (
+                dict(support_override["grasp_calibration"])
+                if support_override
+                else dict(
+                    seq.side_grasps[piece]
+                    if role == "grasp_active" or role == "hold_connector"
+                    else seq.installed_base_grip[1]
+                    if role == "hold_base_assembly"
+                    else seq.installed_upper_grip[1]
+                )
             )
             opening = float(old.qpos[m.joint(side + "_gripper").qposadr[0]])
+            if self.grasp_library:
+                key = self.grasp_library["bindings"][stage_id][side]
+                # Retry other witnessed grips on the SAME rigid motor/body.
+                # Supports stay on their named feature; every alternate still
+                # goes through IK and native bilateral retention admission.
+                retry = int(seed) // self.config["sampling"][f"{split}_per_stage"]
+                if role == "grasp_active" and servo and retry > 0:
+                    alternatives = [
+                        k
+                        for k, value in self.grasp_library["grasps"].items()
+                        if value["anchor"] == m.body(anchor).name
+                        and value["source_witness_pass"]
+                    ]
+                    if alternatives:
+                        key = str(rng.choice(sorted(alternatives)))
+                record = self.grasp_library["grasps"][key]
+                if record["anchor"] != m.body(anchor).name:
+                    raise ValueError(
+                        "Grasp must follow its motor case or printed-body anchor"
+                    )
+                target_p, target_r = world_grasp(
+                    data.xpos[anchor], r1, record["transform"]
+                )
+                spec = dict(record["calibration"])
+                opening = spec["opening_radians"]
+                receipt.setdefault("grasp_library", {})[side] = {
+                    "id": key,
+                    "anchor": record["anchor"],
+                    "source_witness_pass": record["source_witness_pass"],
+                    "candidate_requires_physical_validation": True,
+                }
             spec["opening_radians"] = opening
             slide = rng.uniform(-1, 1) * cfg.get("grasp_slide_m", 0) * level
             if support_override and support_override.get("stable_support", True):
@@ -409,11 +486,37 @@ class WowRoboRandomizer:
             else:
                 receipt["ik"][side] = {"pending": True}
         mujoco.mj_forward(m, data)
-        data.qvel[:] = 0
+        if self.config.get("preserve_reference_velocities", False):
+            data.qvel[:] = old.qvel
+            # MuJoCo free translations are world-frame velocities; free angular
+            # rates are body-local. Carry the measured dynamic seed through the
+            # same rigid change of frame without changing passive shaft rates.
+            for joint in range(m.njnt):
+                if m.jnt_type[joint] != mujoco.mjtJoint.mjJNT_FREE:
+                    continue
+                body = int(m.jnt_bodyid[joint])
+                dof = int(m.jnt_dofadr[joint])
+                change = data.xmat[body].reshape(3, 3) @ old.xmat[body].reshape(3, 3).T
+                data.qvel[dof : dof + 3] = change @ old.qvel[dof : dof + 3]
+            receipt["velocity_initialization"] = (
+                "measured reference; rigidly transformed free translations"
+            )
+        else:
+            data.qvel[:] = 0
         for a in range(m.nu):
-            data.ctrl[a] = data.qpos[m.jnt_qposadr[m.actuator_trnid[a, 0]]]
+            address = m.jnt_qposadr[m.actuator_trnid[a, 0]]
+            preload = (
+                old.ctrl[a] - old.qpos[address]
+                if self.config.get("inherit_equilibrium_control_offsets", False)
+                else 0.0
+            )
+            data.ctrl[a] = np.clip(
+                data.qpos[address] + preload, *m.actuator_ctrlrange[a]
+            )
         if self.nominal_receipts[stage_id].get("support_grasp_by_side"):
-            receipt["support_grasp_by_side"] = self.nominal_receipts[stage_id]["support_grasp_by_side"]
+            receipt["support_grasp_by_side"] = self.nominal_receipts[stage_id][
+                "support_grasp_by_side"
+            ]
         receipt["ik_position_pass"] = solve_arms and all(
             v.get("grasp_position_error_m", 0) <= 0.002 for v in receipt["ik"].values()
         )
@@ -422,7 +525,12 @@ class WowRoboRandomizer:
             receipt["candidate_rejected"] = True
             receipt.setdefault("rejection_reasons", []).extend(
                 "reference_registration:" + str(reason)
-                for reason in nominal_receipt.get("registration_rejection_reasons", nominal_receipt.get("rejection_reasons", ["unresolved reference registration"]))
+                for reason in nominal_receipt.get(
+                    "registration_rejection_reasons",
+                    nominal_receipt.get(
+                        "rejection_reasons", ["unresolved reference registration"]
+                    ),
+                )
             )
         return data, receipt
 
@@ -481,14 +589,37 @@ class WowRoboRandomizer:
         root = m.body(task).id
         local = np.asarray(evidence["far_point_piece_local_m"])
         far = data.xpos[root] + data.xmat[root].reshape(3, 3) @ local
-        gap = float(fit["witness_distance_m"]) if fit else float(evidence["nominal_support_gap_m"])
+        gap = (
+            float(fit["witness_distance_m"])
+            if fit
+            else float(evidence["nominal_support_gap_m"])
+        )
+        reference_offset = evidence.get("reference_signed_support_offset_m")
+        actual_signed_offset = None
+        if reference_offset is not None:
+            receiver_r = data.xmat[receiver].reshape(3, 3)
+            plane_point = data.xpos[receiver] + receiver_r @ np.asarray(
+                evidence["contact_receiver_local_m"]
+            )
+            normal = receiver_r @ np.asarray(evidence["support_normal_receiver_local"])
+            normal /= np.linalg.norm(normal)
+            actual_signed_offset = float(np.dot(far - plane_point, normal))
+            if fit is None:
+                gap = abs(actual_signed_offset - reference_offset)
         return {
             "method": "registered case path with real internal-hinge support fit",
             "receiver_body": evidence["receiver_body"],
             "far_point_piece_local_m": local.tolist(),
             "contact_world_m": far.tolist(),
             "projection_distance_m": 0.0,
-            "support_gap_m": gap,
+            "support_gap_m": abs(actual_signed_offset)
+            if actual_signed_offset is not None
+            else gap,
+            "support_actual_signed_offset_m": actual_signed_offset,
+            "support_deviation_from_reference_m": gap,
+            "support_reference_signed_offset_m": evidence.get(
+                "reference_signed_support_offset_m"
+            ),
             "support_tolerance_m": 0.0001,
             "support_pass": gap <= 0.0001,
             "edge_slide_m": float(slide),
@@ -500,7 +631,9 @@ class WowRoboRandomizer:
 
     def _supported(self, data, task, evidence, axial, rng, level, cfg, axis=None):
         if self.config.get("cad_revision"):
-            return self._supported_repaired(data, task, evidence, axial, rng, level, cfg, axis)
+            return self._supported_repaired(
+                data, task, evidence, axial, rng, level, cfg, axis
+            )
         import trimesh
 
         from assembly_policy.so101.wowrobo_boundaries import world_mesh

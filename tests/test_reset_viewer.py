@@ -154,7 +154,20 @@ def test_official_webviewer_assets_state_stream_and_cleanup(tmp_path, native_sce
             async with client.ws_connect("/state") as stream:
                 message = await stream.receive(timeout=10)
                 assert message.type.name in ("BINARY", "TEXT")
-            assert viewer.studio_process.poll() is None
+            process = viewer.studio_process
+            assert process.poll() is None
+            assert (await client.post(
+                "/api/studio/stop", headers={"Origin": "https://other.example"}
+            )).status == 403
+            assert process.poll() is None
+            assert (await client.post("/api/studio/stop")).status == 200
+            assert process.poll() is not None
+            assert (await client.get("/mujoco/")).status == 503
+            assert (await client.post("/api/studio/stop")).status == 200
+            response = await client.post("/api/studio")
+            assert response.status == 200, await response.text()
+            assert viewer.studio_process is not process
+            assert (await client.get("/mujoco/")).status == 200
         assert viewer.studio_process.poll() is not None
 
     asyncio.run(check())

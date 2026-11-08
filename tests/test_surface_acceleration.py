@@ -66,7 +66,10 @@ def test_shared_model_parallel_threads_match_exhaustive_scan(plant):
         assert_same(a, b)
 
 
-def test_grid_bounds_never_reject_a_sample_below_contact_margin(plant):
+@pytest.mark.parametrize(
+    "query_name", ["assemblenist_grid_box_separated", "assemblenist_grid_box_separated_fine"]
+)
+def test_grid_bounds_never_reject_a_sample_below_contact_margin(plant, query_name):
     """Independent trilinear oracle includes clamped cells outside the grid."""
     import ctypes
     import struct
@@ -79,7 +82,7 @@ def test_grid_bounds_never_reject_a_sample_below_contact_margin(plant):
     config = library.mj_getPluginConfig
     config.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_char_p]
     config.restype = ctypes.c_char_p
-    query = sdf.assemblenist_grid_box_separated
+    query = getattr(sdf, query_name)
     ptr = ctypes.POINTER(ctypes.c_double)
     query.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ptr, ptr, ctypes.c_double]
     query.restype = ctypes.c_int
@@ -121,3 +124,25 @@ def test_grid_bounds_never_reject_a_sample_below_contact_margin(plant):
             distance = c0 + (c1 - c0) * t[:, 2] + np.linalg.norm((f - c) * h, axis=1)
             assert np.all(distance > threshold)
     assert rejected > 30, "The panel must exercise actual positive rejection"
+
+
+def test_compiled_clearance_certificates_against_independent_grid_oracle(plant):
+    """Fresh process isolates the synthetic grid from the shared plugin registry."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from assembly_policy.so101.workcell import ROOT
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(Path(__file__).with_name("grid_certificate_probe.py")),
+            str(ROOT / "plugin/build/libassemblenist_sdf.so"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1"),
+    )

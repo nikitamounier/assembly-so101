@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-viewer/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
@@ -19,3 +20,7 @@ MUJOCO_LOG.TXT
 *.pem
 *.key
 *.p12
+
+# Viewer comparison clips are part of the portable inspection UI.
+!web/public/reference/*.mp4
+!assembly_policy/viewer/static/reference/*.mp4

@@ -386,3 +386,92 @@ def test_internal_bearing_exclusions_preserve_explicit_bracket_stops():
         for c in data.contact
         for g in c.geom
     )
+
+
+def test_source_mesh_floor_routing_is_exact_and_has_no_sdf_duplicates():
+    import xml.etree.ElementTree as ET
+
+    from assembly_policy.so101.wowrobo_physical_resets import (
+        check_table_routing_preserves_mechanics,
+        route_source_mesh_table_contacts,
+    )
+
+    root = ET.fromstring("""<mujoco><option gravity="0 0 -9.81"/>
+    <asset><mesh name="raw" vertex="-.03 -.02 -.01 .03 -.02 -.01 .03 .02 -.01 -.03 .02 -.01 -.03 -.02 .01 .03 -.02 .01 .03 .02 .01 -.03 .02 .01"/></asset>
+    <worldbody><geom name="table" type="plane" size="1 1 .01" contype="4" conaffinity="11" priority="1" condim="4" friction=".6 .005 .0001" solref=".0005 1"/>
+    <body name="part" pos="0 0 .00999"><freejoint/><inertial mass=".1" pos="0 0 0" diaginertia=".001 .001 .001"/>
+    <geom name="source" type="mesh" mesh="raw" contype="0" conaffinity="0"/>
+    <geom name="source__contact" type="box" size=".03 .02 .01" contype="1" conaffinity="15" mass="0"/>
+    </body></worldbody></mujoco>""")
+    before = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
+    receipt = route_source_mesh_table_contacts(root)
+    after = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
+    assert check_table_routing_preserves_mechanics(before, after)[
+        "state_layout_unchanged"
+    ]
+    assert receipt["sdf_table_contacts_disabled"]
+    table, source, sdf = (
+        after.geom(name).id for name in ("table", "source", "source__contact")
+    )
+
+    def allowed(a, b):
+        return bool(
+            after.geom_contype[a] & after.geom_conaffinity[b]
+            or after.geom_contype[b] & after.geom_conaffinity[a]
+        )
+
+    assert allowed(table, source)
+    assert not allowed(table, sdf) and not allowed(source, sdf)
+    assert not allowed(source, source)
+    for quat in ([1, 0, 0, 0], [0.96, 0.13, 0.21, -0.11]):
+        data = mujoco.MjData(after)
+        data.qpos[3:7] = np.array(quat) / np.linalg.norm(quat)
+        mujoco.mj_forward(after, data)
+        mesh = int(after.geom_dataid[source])
+        a, n = after.mesh_vertadr[mesh], after.mesh_vertnum[mesh]
+        raw = after.mesh_vert[a : a + n]
+        world = raw @ data.geom_xmat[source].reshape(3, 3).T + data.geom_xpos[source]
+        data.qpos[2] += -float(world[:, 2].min()) - 1e-5
+        mujoco.mj_forward(after, data)
+        world = raw @ data.geom_xmat[source].reshape(3, 3).T + data.geom_xpos[source]
+        assert data.ncon >= 1
+        if quat == [1, 0, 0, 0]:
+            assert data.ncon >= 3  # A flat face has a manifold, not a single support.
+        for contact in data.contact:
+            assert set(map(int, contact.geom)) == {table, source}
+            assert contact.dist == pytest.approx(float(world[:, 2].min()), abs=1e-8)
+            # Plane/mesh manifold support lies on an actual raw source vertex.
+            point = contact.pos + contact.frame[:3] * contact.dist / 2
+            assert np.min(np.linalg.norm(world - point, axis=1)) < 1e-8
+
+
+def test_actual_curved_fingertip_beyond_legacy_window_counts_without_changing_forces():
+    # The source finger extends to 6.2 mm; legacy 4 mm clipping misses its tip.
+    vertices = " ".join(
+        f"{x} {y} {z}"
+        for x in (0.0042, 0.0062)
+        for y in (-0.003, 0.003)
+        for z in (-0.002, 0)
+    )
+    m = mujoco.MjModel.from_xml_string(f'''<mujoco><option timestep=".001"/>
+      <asset><mesh name="finger" vertex="{vertices}"/></asset><worldbody>
+      <body name="right_gripper"><site name="right_gripperframe"/>
+        <geom name="finger" type="mesh" mesh="finger" contype="0" conaffinity="0"/>
+        <geom name="finger__contact" type="box" pos=".0052 0 -.001" size=".001 .003 .001"/>
+      </body><body name="right_moving_jaw_so101_v1" pos="2 0 0"/>
+      <body name="base_servo" pos=".0052 0 .0009"><freejoint/>
+        <geom type="box" size=".0004 .002 .001" mass=".1"/>
+      </body></worldbody></mujoco>''')
+    d = mujoco.MjData(m)
+    mujoco.mj_forward(m, d)
+    v = object.__new__(WowRoboPhysicalValidator)
+    v.model = m
+    v.grid_records = {
+        "finger": {"source_mesh_name": "right_wrist_roll_follower_so101_v1"}
+    }
+    before = d.efc_force.copy()
+    assert v._loaded_pads(d, [("right", "base_servo")])["right"]["fixed"] == 0
+    assert (
+        v._loaded_pads_source_extent(d, [("right", "base_servo")])["right"]["fixed"] > 0
+    )
+    np.testing.assert_array_equal(d.efc_force, before)

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f4f3ef" />
     <title>SO-101 · Reset explorer</title>
-    <script type="module" crossorigin src="/assets/index-BNUloBnd.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Dvdi1hsO.css">
+    <script type="module" crossorigin src="/assets/index-cr9g6nN1.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-aNmHZl7w.css">
   </head>
   <body>
     <div id="app">
@@ -183,12 +183,10 @@
                 ><strong id="selection-title">Select a reset</strong
                 ><span id="selection-split" class="pill"></span>
               </div>
-              <div class="mode-switch" role="group" aria-label="Renderer">
-                <button id="three-mode" class="active" aria-pressed="true">
-                  ◈ <span>Scene</span></button
-                ><button id="mujoco-mode" aria-pressed="false">
-                  ▧ <span>MuJoCo</span>
-                </button>
+              <div class="inspection-actions">
+                <button id="close-inspection" hidden>Close inspection</button>
+                <button id="advanced-inspection"
+                  title="Open the optional MuJoCo viewer">Advanced inspection</button>
               </div>
             </div>
             <div
@@ -205,6 +203,7 @@
                 <div class="scene-layer-controls" role="group" aria-label="Scene layers">
                   <button id="toggle-geometry" aria-pressed="true">3D</button>
                   <button id="toggle-points" aria-pressed="true" disabled>Points</button>
+                  <button id="toggle-boxes" aria-pressed="false" hidden title="Actual collision geometry used by the bare MuJoCo prototype">Collisions</button>
                   <button id="toggle-reward" aria-pressed="false" disabled>Reward region</button>
                 </div>
                 <button id="home-camera" title="Fit scene (F)">
@@ -283,7 +282,7 @@
           </div>
         </section>
         <footer class="page-footer">
-          <span><i></i> Both renderers share the selected native state.</span
+          <span><i></i> Scene shows the selected saved state.</span
           ><span>← → Browse resets <b>·</b> F Fit scene</span>
         </footer>
         <div id="error" role="alert" hidden></div>

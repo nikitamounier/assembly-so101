@@ -91,6 +91,7 @@ def candidate_summary(row):
         ),
         "physics_profile": row.get("physical", {}).get("physics_profile"),
         "physical_metrics": row.get("physical", {}).get("metrics", {}),
+        "minimum_validity": row.get("physical", {}).get("minimum_validity"),
         "pin_pose_overlay": row.get("physical", {}).get("pin_pose_overlay"),
         "display_pose": row.get("display_pose", "authored_candidate"),
         "state_sha256": row["state_sha256"],
@@ -128,14 +129,22 @@ def export_review(output, nominal, stages, rows, progress, display_scene=None):
                     states.append(saved["states"][0].copy())
                     controls.append(saved["controls"][0].copy())
                 seeds.append(-1)
-                reference = source_manifest.get("nominal_validation_by_task", {}).get(stage, {})
+                reference = source_manifest.get("nominal_validation_by_task", {}).get(
+                    stage, {}
+                )
                 metadata.append(
                     {
                         "kind": "nominal",
                         "cad_revision": source_manifest.get("cad_revision"),
-                        "support_grasp_by_side": source_manifest.get("stage_by_task", {}).get(stage, {}).get("support_grasp_by_side", {}),
+                        "support_grasp_by_side": source_manifest.get(
+                            "stage_by_task", {}
+                        )
+                        .get(stage, {})
+                        .get("support_grasp_by_side", {}),
                         "training_eligible": False,
-                        "candidate_rejected": bool(reference.get("candidate_rejected", False)),
+                        "candidate_rejected": bool(
+                            reference.get("candidate_rejected", False)
+                        ),
                         "rejection_reasons": reference.get("rejection_reasons", []),
                         "reference_validation": reference,
                         "qualification": "Nominal reference pose in physical overlay geometry; not physical admission"
@@ -167,7 +176,10 @@ def export_review(output, nominal, stages, rows, progress, display_scene=None):
     manifest = dict(
         source_manifest,
         reset_distribution="photo_variations",
-        display_name=source_manifest.get("randomized_display_name", "WowRobo · randomized variations · admission status"),
+        display_name=source_manifest.get(
+            "randomized_display_name",
+            "WowRobo · randomized variations · admission status",
+        ),
         variation_by_task=variation,
         progress=progress,
         default_viewer_collection=True,
@@ -222,6 +234,18 @@ def export_qualified(output, validator, stages, rows, progress):
                 controls=np.stack(controls),
                 seed=np.array([r["seed"] for r in chosen]),
                 family=np.zeros(len(chosen), dtype=int),
+                friction_multipliers=np.array(
+                    [
+                        [
+                            row["metadata"]["friction_multipliers"].get(category, 1.0)
+                            for category in ("finger_part", "part_table", "part_part")
+                        ]
+                        for row in chosen
+                    ]
+                ),
+                friction_categories=np.array(
+                    ["finger_part", "part_table", "part_part"]
+                ),
             )
     write_json(
         bank / "manifest.json",

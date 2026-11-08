@@ -1,12 +1,12 @@
 """Isolated free loose-module equilibrium library; no fixed module DOFs."""
-import hashlib,json,time,xml.etree.ElementTree as ET
+import argparse,hashlib,json,time,xml.etree.ElementTree as ET
 from pathlib import Path
 import mujoco,numpy as np
 from assembly_policy.so101.wowrobo_contact_backend import load_backend,set_surface_mode
 from assembly_policy.so101.wowrobo_equilibrium import rotation_degrees
 from assembly_policy.so101.wowrobo_physical_resets import physical_split_step
-ROOT=Path(__file__).resolve().parents[2];OUT=Path(__file__).parent/'loose-forearm-v1';OUT.mkdir(exist_ok=True)
-p=json.loads((ROOT/'outputs/equilibrium-model-20261107/profile-bearing-v4/profile.json').read_text());load_backend(p['grid_manifest']);set_surface_mode(1)
+ROOT=Path(__file__).resolve().parents[2];ap=argparse.ArgumentParser();ap.add_argument('--profile',default='outputs/equilibrium-model-20261107/profile-bearing-v4');ap.add_argument('--output',default='loose-forearm-v1');ap.add_argument('--seconds',type=float,default=5.);a=ap.parse_args();OUT=Path(__file__).parent/a.output;OUT.mkdir(exist_ok=True)
+p=json.loads((ROOT/a.profile/'profile.json').read_text());load_backend(p['grid_manifest']);set_surface_mode(1)
 full=mujoco.MjModel.from_xml_path(p['model_path']);z=np.load(Path(__file__).parent/'baseline-v4.npz')
 r=ET.parse(p['model_path']).getroot();r.set('model','loose_forearm_equilibrium_diagnostic');w=r.find('worldbody')
 for node in list(w):
@@ -32,7 +32,7 @@ def startwindow():
  global window_start,maxtrans,maxrot,maxvel
  window_start=pose();maxtrans={name:0. for name in parts};maxrot={name:0. for name in parts};maxvel=0.
 startwindow()
-for i in range(round(5./m.opt.timestep)):
+for i in range(round(a.seconds/m.opt.timestep)):
  physical_split_step(m,d,friction)
  maxvel=max(maxvel,float(max(abs(d.qvel))))
  for name,(pos,rot)in pose().items():

@@ -173,12 +173,21 @@ class RepairedResetSequence:
         p, r = body_pose(data, case)
         qadr = int(self.model.joint(f"target_servo_{servo}_shaft").qposadr[0])
         canonical_hinge = float(data.qpos[qadr])
-        mesh = self._receiver_mesh(data, evidence["receiver_body"])
+        reference_offset = evidence.get("reference_signed_support_offset_m")
+        mesh = self._receiver_mesh(data, evidence["receiver_body"]) if reference_offset is None else None
         local = np.asarray(evidence["far_point_piece_local_m"])
+        if reference_offset is not None:
+            receiver_p, receiver_r = body_pose(data, evidence["receiver_body"])
+            plane_point = receiver_p + receiver_r @ np.asarray(evidence["contact_receiver_local_m"])
+            plane_normal = receiver_r @ np.asarray(evidence["support_normal_receiver_local"])
+            plane_normal /= np.linalg.norm(plane_normal)
         def objective(hinge):
             self._set_case_with_hinge(data, task, p, r, hinge)
             rp, rr = body_pose(data, task)
             far = rp + rr @ local
+            if reference_offset is not None:
+                residual = float(np.dot(far - plane_point, plane_normal) - reference_offset)
+                return residual**2 + 1e-14*(hinge-preferred_hinge)**2
             _, distances, _ = trimesh.proximity.closest_point(mesh, [far])
             return float(distances[0]**2 + 1e-14*(hinge-preferred_hinge)**2)
         grid = np.linspace(preferred_hinge-.12, preferred_hinge+.12, 25)

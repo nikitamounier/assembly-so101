@@ -30,9 +30,12 @@ static int free_object(const mjModel* m, int geom) {
 // Reconstruct support continuously within the ordinary native contact margin.
 // Pair impedance supplies compliance; a penetration-gap switch would make
 // supporting contacts appear and disappear with a finite force jump.
+extern "C" int assemblenist_grid_contact_sample(const mjModel*,const mjData*,int,const mjtNum[3],mjtNum,mjtNum*,mjtNum[3]);
+extern "C" const void* assemblenist_grid_contact_handle(const mjModel*,const mjData*,int);
+extern "C" mjtNum assemblenist_grid_contact_eval(const void*,const mjtNum[3],mjtNum,mjtNum[3]);
 static void sample_surface(const mjModel* m, const mjData* d, int visual, int target,
                            const mjtNum point[3], int direction, mjtNum threshold,
-                           mjPreContact bins[12]) {
+                           mjPreContact bins[12],const void* grid_context=nullptr) {
   if(profile_surface) surface_stats[4]++;
   mjtNum world[3], local[3], delta[3];
   mju_mulMatVec3(world, d->geom_xmat + 9*visual, point);
@@ -43,14 +46,16 @@ static void sample_surface(const mjModel* m, const mjData* d, int visual, int ta
   for (int k = 0; k < 3; k++) {
     if (fabs(local[k] - aabb[k]) > aabb[k+3] + 0.0001) return;
   }
-  int instance = m->geom_plugin[target];
-  if (instance < 0) return;
-  const mjpPlugin* plugin = mjp_getPluginAtSlot(m->plugin[instance]);
-  if (!plugin || !plugin->sdf_distance || !plugin->sdf_gradient) return;
-  mjtNum distance = plugin->sdf_distance(local, d, instance);
-  if (!isfinite(distance) || distance >= threshold) return;
-  mjtNum gradient[3], normal[3];
-  plugin->sdf_gradient(gradient, local, d, instance);
+  mjtNum distance,gradient[3],normal[3];
+  if(grid_context)distance=assemblenist_grid_contact_eval(grid_context,local,threshold,gradient);
+  else {
+    int instance=m->geom_plugin[target];if(instance<0)return;
+    const auto* plugin=mjp_getPluginAtSlot(m->plugin[instance]);
+    if(!plugin || !plugin->sdf_distance || !plugin->sdf_gradient)return;
+    distance=plugin->sdf_distance(local,d,instance);
+    if(isfinite(distance) && distance<threshold)plugin->sdf_gradient(gradient,local,d,instance);
+  }
+  if(!isfinite(distance) || distance>=threshold)return;
   mjtNum length = mju_normalize3(gradient);
   if (!isfinite(length) || length < 1e-10) return;
   mju_mulMatVec3(normal, d->geom_xmat + 9*target, gradient);

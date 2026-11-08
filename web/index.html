@@ -181,12 +181,10 @@
                 ><strong id="selection-title">Select a reset</strong
                 ><span id="selection-split" class="pill"></span>
               </div>
-              <div class="mode-switch" role="group" aria-label="Renderer">
-                <button id="three-mode" class="active" aria-pressed="true">
-                  ◈ <span>Scene</span></button
-                ><button id="mujoco-mode" aria-pressed="false">
-                  ▧ <span>MuJoCo</span>
-                </button>
+              <div class="inspection-actions">
+                <button id="close-inspection" hidden>Close inspection</button>
+                <button id="advanced-inspection"
+                  title="Open the optional MuJoCo viewer">Advanced inspection</button>
               </div>
             </div>
             <div
@@ -203,6 +201,7 @@
                 <div class="scene-layer-controls" role="group" aria-label="Scene layers">
                   <button id="toggle-geometry" aria-pressed="true">3D</button>
                   <button id="toggle-points" aria-pressed="true" disabled>Points</button>
+                  <button id="toggle-boxes" aria-pressed="false" hidden title="Actual collision geometry used by the bare MuJoCo prototype">Collisions</button>
                   <button id="toggle-reward" aria-pressed="false" disabled>Reward region</button>
                 </div>
                 <button id="home-camera" title="Fit scene (F)">
@@ -281,7 +280,7 @@
           </div>
         </section>
         <footer class="page-footer">
-          <span><i></i> Both renderers share the selected native state.</span
+          <span><i></i> Scene shows the selected saved state.</span
           ><span>← → Browse resets <b>·</b> F Fit scene</span>
         </footer>
         <div id="error" role="alert" hidden></div>

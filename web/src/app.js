@@ -478,6 +478,7 @@ async function select(id) {
     $("#selection-status").hidden = true;
     $("#variation-review").hidden = true;
     $("#qualification").hidden = true;
+    if (view.mode === "mujoco") await setMode("three");
     view.clear();
     pointCloud.clear();
     rewardSection.clear();
@@ -488,7 +489,7 @@ async function select(id) {
       field.textContent = "—";
     $("#view-message").textContent = "No resets match these filters.";
     $("#view-message").hidden = false;
-    $("#three-mode").disabled = $("#mujoco-mode").disabled = true;
+    $("#close-inspection").disabled = $("#advanced-inspection").disabled = true;
     return;
   }
   try {
@@ -507,7 +508,7 @@ async function select(id) {
     pointCloud.setSnapshot(snapshot);
     rewardSection.setSnapshot(snapshot);
     $("#view-message").hidden = true;
-    $("#three-mode").disabled = $("#mujoco-mode").disabled = false;
+    $("#close-inspection").disabled = $("#advanced-inspection").disabled = false;
     details(snapshot.entry, snapshot);
     $("#error").hidden = true;
   } catch (error) {
@@ -535,21 +536,16 @@ function move(delta) {
 
 async function setMode(mode) {
   const message = $("#view-message");
-  const three = $("#three-mode"),
-    mujoco = $("#mujoco-mode");
+  const three = $("#close-inspection"),
+    mujoco = $("#advanced-inspection");
   three.disabled = mujoco.disabled = true;
   message.textContent = "Starting MuJoCo WebViewer…";
   message.hidden = mode !== "mujoco";
   try {
     await view.setMode(mode);
     message.hidden = true;
-    for (const [button, name] of [
-      [three, "three"],
-      [mujoco, "mujoco"],
-    ]) {
-      button.classList.toggle("active", mode === name);
-      button.setAttribute("aria-pressed", String(mode === name));
-    }
+    three.hidden = mode !== "mujoco";
+    mujoco.hidden = mode === "mujoco";
     $("#view-label").textContent =
       mode === "three" ? "3D SCENE" : "MUJOCO WEBVIEWER";
     $(".camera-presets").hidden = mode === "mujoco";
@@ -740,6 +736,32 @@ async function main() {
     if (selected) await select(selected);
   });
   view.setScene(scene);
+  if (catalog.scene === "wowrobo-layout") {
+    try {
+      const response = await fetch("/collision-boxes.json", { cache: "no-cache" });
+      if (response.ok) {
+        const boxes = await response.json();
+        view.setCollisionBoxes(boxes);
+        const button = $("#toggle-boxes");
+        let visible = false;
+        button.hidden = false;
+        button.setAttribute("aria-pressed", "false");
+        view.setCollisionBoxesVisible(false);
+        button.title = `Actual bare MuJoCo collision geometry: ${boxes.boxes.length} box geoms · Blue: robot · Green: finger pads · Orange: assembly parts · 3D toggles the visual CAD`;
+        pointCloud.geometryVisible = true;
+        pointCloud.pointsVisible = false;
+        pointCloud.updateLayers();
+        $("#view-label").textContent = "3D SCENE";
+        button.onclick = () => {
+          visible = !visible;
+          view.setCollisionBoxesVisible(visible);
+          button.setAttribute("aria-pressed", String(visible));
+        };
+      }
+    } catch (error) {
+      console.warn("Collision overlay unavailable:", error.message);
+    }
+  }
   $("#total").textContent = catalog.entries.length.toLocaleString();
   for (const bank of catalog.banks) {
     const element = option(
@@ -791,8 +813,11 @@ async function main() {
     page++;
     drawList();
   };
-  $("#three-mode").onclick = () => setMode("three");
-  $("#mujoco-mode").onclick = () => setMode("mujoco");
+  window.addEventListener("pagehide", () => {
+    if (view.mode === "mujoco") navigator.sendBeacon("/api/studio/stop");
+  });
+  $("#close-inspection").onclick = () => setMode("three");
+  $("#advanced-inspection").onclick = () => setMode("mujoco");
   $("#home-camera").onclick = () => view.preset("perspective");
   for (const button of document.querySelectorAll("[data-camera]"))
     button.onclick = () => {
@@ -869,7 +894,7 @@ async function main() {
     filtered = filterEntries(catalog.entries, filters);
     await select(selectionAfterFilter(filtered, hash.get("reset")));
   }
-  if (hash.get("mode") === "mujoco" && selected) await setMode("mujoco");
+
 }
 
 main().catch(fail);
@@ -891,7 +916,7 @@ function chooseAssemblyVideo(source) {
   $("#video-simulation").setAttribute("aria-pressed", String(source === "simulation"));
   $("#reference-video-caption").textContent = source === "real"
     ? "Real assembly reference. Intended robot motion: hold the motor, let the bracket fold, then lower it so the bracket slides and opens."
-    : "Native physics: force-held motor, passive hinge, fixed receiver, no hand. Bracket folds ~10° then opens to ~0.6°; motor reaches within 0.17 mm of the seating reference under applied force. In a separate 1 s release check it drifted 0.13 mm. Fixed-receiver diagnostic, not training qualification.";
+    : "Earlier diagnostic before housing centering: force-held motor, passive hinge, fixed receiver, no hand. Bracket folds ~10° then opens to ~0.6°; motor reaches within 0.17 mm of the seating reference under applied force. In a separate 1 s release check it drifted 0.13 mm. Fixed-receiver diagnostic, not training qualification.";
 }
 $("#video-real").onclick = () => chooseAssemblyVideo("real");
 $("#video-simulation").onclick = () => chooseAssemblyVideo("simulation");

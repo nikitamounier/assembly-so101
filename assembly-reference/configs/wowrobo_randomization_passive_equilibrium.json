@@ -404,5 +404,7 @@
   "passive_motor_stops": true,
   "exclude_internal_servo_contacts": true,
   "helper_grid_profile": "assets_local/wowrobo/physical-resets-repaired-cover-support-v2",
-  "equilibrium_required": true
+  "equilibrium_required": true,
+  "source_mesh_table_contacts": true,
+  "inherit_equilibrium_control_offsets": true
 }

@@ -65,11 +65,15 @@ def additional_jobs(config, queue, ledger):
         return 0
     cpus = sum(j["cpus"] for j in active)
     # Cloud processes reserve slots even while starting; caller updates this field.
-    free_workers = config["worker_slots"] - config.get("cloud_workers", 0) - cpus // 2
+    cpus_per_worker = config.get("cpus_per_worker", 2)
+    if cpus_per_worker not in (1, 2, 5, 10):
+        raise ValueError("Worker CPU shape must divide the ten-CPU job")
+    free_workers = config["worker_slots"] - config.get("cloud_workers", 0) - cpus // cpus_per_worker
     return max(
         0,
         min(
-            (config["max_chimera_cpus"] - cpus) // 10, free_workers // 5, config.get("max_jobs_per_cycle", 10)
+            (config["max_chimera_cpus"] - cpus) // 10,
+            free_workers // (10 // cpus_per_worker), config.get("max_jobs_per_cycle", 10)
         ),
     )
 
@@ -153,8 +157,11 @@ def cycle(directory):
             if ticket["n_conns"] != config["worker_slots"]:
                 raise RuntimeError("Wrong learner ticket")
             log = run / "log.jsonl"
-            if now - log.stat().st_mtime > 180:
+            if now - log.stat().st_mtime > config.get("progress_fresh_s", 180):
                 raise RuntimeError("Learner has no fresh progress; refuse scale-up")
+            records = log.read_text().splitlines()
+            if not records or json.loads(records[-1]).get("it", 0) < 1:
+                raise RuntimeError("Learner has no committed PPO update; refuse scale-up")
             env = {k: v for k, v in os.environ.items() if not k.startswith(("SLURM_", "SRUN_", "SBATCH_"))}
             env.update(
                 SO101_ROOT=config["root"],

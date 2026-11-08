@@ -1415,3 +1415,7 @@ h1 > span {
 .reference-video-tabs button[aria-pressed="true"] { color: #fff; background: #215f9a; }
 .reward-tolerances button { padding: 6px 10px; border: 1px solid #cbd5ce; border-radius: 4px; color: #365c4c; background: #fff; font: inherit; cursor: pointer; }
 .reward-tolerances button:disabled { opacity: .5; cursor: default; }
+
+.inspection-actions { display: flex; align-items: center; flex-shrink: 0; }
+.inspection-actions button { font-size: 11px; padding: 7px 10px; }
+.inspection-actions [hidden] { display: none; }

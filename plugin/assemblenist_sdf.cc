@@ -212,7 +212,7 @@ inline float h2f(uint16_t x) {
 #endif
 }
 
-double grid_eval(const mjtNum p[3], const Grid* G, mjtNum* grad) {
+double grid_eval(const mjtNum p[3], const Grid* G, mjtNum* grad, double gradient_threshold=INFINITY) {
   const double h = G->h;
   double f[3] = {(p[0] - G->ox) / h, (p[1] - G->oy) / h, (p[2] - G->oz) / h};
   const int n[3] = {G->nx, G->ny, G->nz};
@@ -236,7 +236,7 @@ double grid_eval(const mjtNum p[3], const Grid* G, mjtNum* grad) {
   double c0 = c00 + (c10 - c00) * ty, c1 = c01 + (c11 - c01) * ty;
   double d = c0 + (c1 - c0) * tz;
   double out = std::sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]);
-  if (grad) {
+  if (grad && (gradient_threshold==INFINITY || d+out < gradient_threshold)) {
     if (out > 1e-12) {
       for (int k = 0; k < 3; ++k) grad[k] = e[k] / out;
     } else {
@@ -379,3 +379,21 @@ mjPLUGIN_LIB_INIT(assemblenist_sdf) {
 }
 
 #include "so101_grid_bounds.h"
+
+extern "C" int assemblenist_grid_contact_sample(const mjModel* m,const mjData* d,int instance,const mjtNum p[3],mjtNum threshold,mjtNum* distance,mjtNum gradient[3]) {
+ if(instance<0 || !d->plugin_data[instance])return 0;
+ const auto* plugin=mjp_getPluginAtSlot(m->plugin[instance]);
+ if(!plugin || strcmp(plugin->name,"assemblenist.sdf.grid"))return 0;
+ const Grid* grid=get_grid(int(reinterpret_cast<Inst*>(d->plugin_data[instance])->a[0]));
+ *distance=grid_eval(p,grid,gradient,threshold);return 1;
+}
+
+extern "C" const void* assemblenist_grid_contact_handle(const mjModel* m,const mjData* d,int instance) {
+ if(instance<0 || !d->plugin_data[instance])return nullptr;
+ const auto* plugin=mjp_getPluginAtSlot(m->plugin[instance]);
+ if(!plugin || strcmp(plugin->name,"assemblenist.sdf.grid"))return nullptr;
+ return get_grid(int(reinterpret_cast<Inst*>(d->plugin_data[instance])->a[0]));
+}
+extern "C" mjtNum assemblenist_grid_contact_eval(const void* handle,const mjtNum p[3],mjtNum threshold,mjtNum gradient[3]) {
+ return grid_eval(p,static_cast<const Grid*>(handle),gradient,threshold);
+}

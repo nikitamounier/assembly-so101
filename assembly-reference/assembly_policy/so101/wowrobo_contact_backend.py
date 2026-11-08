@@ -44,6 +44,8 @@ def _build_native_unlocked(build_dir=DEFAULT_NATIVE):
     ]
     originals = {name: (SOURCE / "plugin" / name).read_bytes() for name in names}
     text = originals["so101_contact_search.c"].decode()
+    optimization = (Path(__file__).parent / "wowrobo_contact_cache.h").read_text()
+    text = optimization + "\n" + text
     anchor = '  int forward = !strcmp(a, "base_contact")'
     start = text.index(anchor)
     stop = text.index("  mjtNum threshold = margin;", start)
@@ -80,14 +82,52 @@ def _build_native_unlocked(build_dir=DEFAULT_NATIVE):
     at = text.index(dispatch, text.index("static int contact_search"))
     text = (
         text[:at]
-        + """  int wow = mj_name2id(m, mjOBJ_NUMERIC, "wowrobo_surface_contact_guard");
+        + """  int wow_helper_role = 0;
+  int wow = mj_name2id(m, mjOBJ_NUMERIC, "wowrobo_surface_contact_guard");
   if (wow >= 0 && a && b && strstr(a,"__contact") && strstr(b,"__contact")) {
     int assembly = mj_name2id(m,mjOBJ_NUMERIC,"so101_assembly_search");
     if (assembly >= 0) id=assembly;
+    // Preserve explicit mating/passive-stop budgets. Helpers have separate
+    // grasp and hardware budgets; original target-target mating stays 40x40.
+    int helper_a=strstr(a,"physical_helper_")!=nullptr;
+    int helper_b=strstr(b,"physical_helper_")!=nullptr;
+    int role=mj_name2id(m,mjOBJ_NUMERIC,
+        helper_a && helper_b ? "wowrobo_hardware_search" : "wowrobo_grasp_search");
+    bool explicit_pair=false;
+    for(int pair=0;pair<m->npair;++pair)
+      explicit_pair|=(m->pair_geom1[pair]==g1 && m->pair_geom2[pair]==g2) ||
+                     (m->pair_geom1[pair]==g2 && m->pair_geom2[pair]==g1);
+    if ((helper_a || helper_b) && !explicit_pair) {
+      if(role>=0) id=role;
+      else wow_helper_role=helper_a && helper_b ? 2 : 1;
+    }
   } else
 """
         + text[at:]
     )
+    # Exact-pose memoization applies only to our immutable grid-SDF supplement.
+    # Ordinary MuJoCo collision search still runs on every call.
+    insertion = "  for (int direction = 0; direction < 2; direction++) {"
+    text = text.replace(insertion, """  WowSupplementMemo* memo = wow_supplement_memo(m,d,g1,g2,threshold);
+  if (memo->matches && surface_mode != 2) {
+    memcpy(bins,memo->bins,sizeof(bins));
+  } else {
+""" + insertion, 1)
+    merge = "  for (int i = 0; i < 12; i++) {\n    if (bins[i].dist >= threshold) continue;"
+    text = text.replace(merge, """  memcpy(memo->bins,bins,sizeof(bins));
+  memo->valid=true;
+  }
+""" + merge, 1)
+    budget_anchor = "  view.opt.sdf_iterations = (int)values[1];"
+    text = text.replace(budget_anchor, budget_anchor + """
+  if (wow_helper_role) {
+    view.opt.sdf_initpoints = 40;
+    view.opt.sdf_iterations = 40;
+  }
+""", 1)
+    collider_call = "  int count = collider(&view, d, con, g1, g2, margin);"
+    assert text.count(collider_call)==1
+    text = text.replace(collider_call, "  int count = surface_mode!=2 && margin<=0 && wow_sdf_pair_clear(m,d,g1,g2) ? 0 : collider(&view, d, con, g1, g2, margin);")
     text += r"""
 extern "C" double wowrobo_sdf_distance(const mjModel* m, const mjData* d, int geom, const mjtNum world[3]) {
   mjtNum local[3], delta[3];
@@ -112,6 +152,7 @@ extern "C" double wowrobo_sdf_distance(const mjModel* m, const mjData* d, int ge
         "source": str(SOURCE / "plugin"),
         "source_hashes": identity,
         "patched_contact_sha256": sha256(build_dir / "so101_contact_search.c"),
+        "optimization_header_sha256": hashlib.sha256(optimization.encode()).hexdigest(),
         "routing": "numeric wowrobo_surface_contact_guard + original visual names / __contact suffix",
         "unchanged_algorithms": [
             "grid_eval",
@@ -264,6 +305,8 @@ def prepare_scene(
     for name, values in [
         ("so101_sdf_search", cfg["contact_search"]),
         ("so101_assembly_search", cfg["assembly_search"]),
+        ("wowrobo_grasp_search", cfg["assembly_search"]),
+        ("wowrobo_hardware_search", cfg["assembly_search"]),
     ]:
         ET.SubElement(
             custom,

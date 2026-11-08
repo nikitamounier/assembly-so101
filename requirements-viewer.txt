@@ -1,0 +1,13 @@
+# Constraints matching the localhost:8876 inspection environment, Python 3.12.
+# Install with: bash scripts/setup_viewer.sh
+mujoco==4.0.0
+mujoco-core==4.0.0
+mujoco-studio==4.0.0
+numpy==2.5.4
+scipy==1.18.1
+trimesh==5.2.0
+libigl==2.6.3
+psutil==7.2.2
+aiohttp==3.14.5
+yarl==1.25.1
+torch==2.15.0

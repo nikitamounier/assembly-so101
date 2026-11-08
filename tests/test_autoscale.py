@@ -66,3 +66,12 @@ def test_observation_only_sweep_never_submits_and_throttles(tmp_path, monkeypatc
     n = len(calls)
     assert autoscale.cycle(tmp_path)["cached"]
     assert len(calls) == n
+
+
+def test_one_threaded_process_per_ten_cpus_counts_slots_and_pending():
+    c = config(cpus_per_worker=10)
+    c["worker_slots"] = 100
+    q = [dict(id="1", state="RUNNING", cpus=350), dict(id="2", state="PENDING", cpus=640)]
+    assert additional_jobs(c, q, dict(jobs=["2"])) == 1
+    c["worker_slots"] = 99
+    assert additional_jobs(c, q, dict(jobs=["2"])) == 0

@@ -168,6 +168,99 @@ def _passive_stop_pairs():
     ]
 
 
+def route_source_mesh_table_contacts(root):
+    """Use native source-vertex support manifolds only against the flat table.
+
+    Plane support of a mesh and its convex hull is identical. Native mesh/plane
+    manifolds retain all extremal source supports, unlike the one-point SDF/plane
+    route. No hull is used for target/helper/mating contacts and no shape is added.
+    """
+    geoms = list(root.iter("geom"))
+    contacts = {
+        g.get("name").removesuffix("__contact"): g
+        for g in geoms
+        if g.get("name", "").endswith("__contact")
+    }
+    source_names, table_names = [], []
+    for geom in geoms:
+        name = geom.get("name", "")
+        if name in contacts and geom.get("type") == "mesh":
+            geom.set("contype", "16")
+            geom.set("conaffinity", "4")
+            source_names.append(name)
+        elif name.endswith("__contact"):
+            geom.set("conaffinity", str(int(geom.get("conaffinity", "15")) & ~4))
+        elif geom.get("type") == "plane":
+            geom.set("contype", "4")
+            geom.set("conaffinity", "16")
+            table_names.append(name)
+    if not source_names or not table_names:
+        raise ValueError("Source-mesh table routing requires mesh sources and a plane")
+    return {
+        "profile": "source_vertices_plane_manifold_v1",
+        "source_mesh_geoms": source_names,
+        "table_geoms": table_names,
+        "sdf_table_contacts_disabled": True,
+        "floor_only_collision_bit": 16,
+        "source_shape_unchanged": True,
+        "contact_law_unchanged": True,
+        "geometry_scope": "Native mesh/plane support only; all target/helper/mating contacts retain source SDFs",
+    }
+
+
+def check_table_routing_preserves_mechanics(before, after):
+    """Prove routing changes only contact masks, not state layout or geometry."""
+    arrays = (
+        "body_parentid",
+        "body_mass",
+        "body_inertia",
+        "body_ipos",
+        "body_iquat",
+        "body_pos",
+        "body_quat",
+        "jnt_type",
+        "jnt_bodyid",
+        "jnt_qposadr",
+        "jnt_dofadr",
+        "jnt_pos",
+        "jnt_axis",
+        "jnt_range",
+        "jnt_stiffness",
+        "dof_damping",
+        "dof_frictionloss",
+        "dof_armature",
+        "geom_type",
+        "geom_dataid",
+        "geom_bodyid",
+        "geom_pos",
+        "geom_quat",
+        "geom_size",
+        "geom_friction",
+        "geom_solref",
+        "geom_solimp",
+        "geom_condim",
+        "geom_priority",
+        "mesh_vert",
+        "mesh_face",
+        "actuator_trnid",
+        "actuator_gainprm",
+        "actuator_biasprm",
+        "actuator_forcerange",
+        "eq_data",
+    )
+    if any(
+        getattr(before, key) != getattr(after, key)
+        for key in ("nq", "nv", "nu", "neq", "ngeom", "npair")
+    ):
+        raise ValueError(
+            "Source-mesh floor routing changed state or contact-pair layout"
+        )
+    for name in arrays:
+        if not np.array_equal(getattr(before, name), getattr(after, name)):
+            raise ValueError(f"Source-mesh floor routing changed mechanics: {name}")
+    return {"state_layout_unchanged": True, "exact_native_arrays_checked": list(arrays)}
+
+
 def add_passive_bracket_contacts(root):
     """Restore real bracket/motor stops omitted by native parent filtering.
 
@@ -356,12 +449,19 @@ def build_physical_profile(
     passive_motor_stops=False,
     helper_grid_profile=None,
     exclude_internal_servo_contacts=False,
+    source_mesh_table_contacts=False,
+    center_motor_housings=False,
 ):
     """Create an isolated all-source-SDF profile, reusing immutable target grids."""
     nominal_bank, output_dir = Path(nominal_bank).resolve(), Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     source = nominal_bank / "scene.xml"
     root = ET.parse(source).getroot()
+    housing_registration = None
+    if center_motor_housings:
+        from .wowrobo_housing_registration import apply_housing_centering
+
+        housing_registration = apply_housing_centering(root)
     original = json.loads(Path(grid_manifest).read_text())
     if mating_profile not in (None, "legacy_mapped_all"):
         raise ValueError("Unknown full-assembly mating profile")
@@ -574,12 +674,25 @@ def build_physical_profile(
         else None
     )
     add_assembly_attachments(root, nominal_bank, anchor_folder)
+    table_routing, before_table_model = None, None
+    if source_mesh_table_contacts:
+        before_table_model = mujoco.MjModel.from_xml_string(
+            ET.tostring(root, encoding="unicode")
+        )
+        table_routing = route_source_mesh_table_contacts(root)
     ET.ElementTree(root).write(physical_path, encoding="unicode")
-    shaft_audit = (
-        check_passive_target_shafts(mujoco.MjModel.from_xml_path(str(physical_path)))
-        if passive_motor_stops
+    compiled_model = (
+        mujoco.MjModel.from_xml_path(str(physical_path))
+        if passive_motor_stops or source_mesh_table_contacts
         else None
     )
+    shaft_audit = (
+        check_passive_target_shafts(compiled_model) if passive_motor_stops else None
+    )
+    if table_routing is not None:
+        table_routing["native_mechanics_audit"] = (
+            check_table_routing_preserves_mechanics(before_table_model, compiled_model)
+        )
     result = {
         "model_path": str(physical_path),
         "model_sha256": _hash(physical_path),
@@ -601,6 +714,8 @@ def build_physical_profile(
         "mating_profile": mating,
         "passive_motor_stops": stops,
         "internal_servo_bearing_exclusions": bearing_exclusions,
+        "source_mesh_table_contacts": table_routing,
+        "housing_registration": housing_registration,
         "passive_target_shafts": shaft_audit,
         "helper_grid_profile": str(Path(helper_grid_profile).resolve())
         if helper_grid_profile is not None
@@ -724,6 +839,8 @@ class WowRoboPhysicalValidator:
         passive_motor_stops=False,
         helper_grid_profile=None,
         exclude_internal_servo_contacts=False,
+        source_mesh_table_contacts=False,
+        center_motor_housings=False,
     ):
         self.nominal_bank = Path(
             nominal_bank or ROOT / "assets_local/wowrobo/photo-resets-v3"
@@ -796,6 +913,20 @@ class WowRoboPhysicalValidator:
             ):
                 raise ValueError("Physical profile passive motor-stop law changed")
             saved_exclusions = self.profile.get("internal_servo_bearing_exclusions")
+            saved_table = self.profile.get("source_mesh_table_contacts")
+            if bool(self.profile.get("housing_registration")) != bool(
+                center_motor_housings
+            ):
+                raise ValueError(
+                    "Physical profile housing registration changed; use a new directory"
+                )
+            if bool(saved_table) != bool(source_mesh_table_contacts):
+                raise ValueError("Physical profile source-mesh table selection changed")
+            if (
+                source_mesh_table_contacts
+                and saved_table.get("profile") != "source_vertices_plane_manifold_v1"
+            ):
+                raise ValueError("Physical profile source-mesh table routing changed")
             if bool(saved_exclusions) != bool(exclude_internal_servo_contacts):
                 raise ValueError(
                     "Physical profile internal servo bearing selection changed"
@@ -833,14 +964,20 @@ class WowRoboPhysicalValidator:
                 passive_motor_stops=passive_motor_stops,
                 helper_grid_profile=helper_grid_profile,
                 exclude_internal_servo_contacts=exclude_internal_servo_contacts,
+                source_mesh_table_contacts=source_mesh_table_contacts,
+                center_motor_housings=center_motor_housings,
             )
         set_surface_mode(1)
-        self.model = mujoco.MjModel.from_xml_path(self.profile["model_path"])
+        self.model = mujoco.MjModel.from_xml_string(
+            Path(self.profile["model_path"]).read_text()
+        )
         if passive_motor_stops:
             check_passive_target_shafts(self.model)
         self.scene_path = Path(self.profile["model_path"])
-        self.nominal_model = mujoco.MjModel.from_xml_path(
-            str(self.profile.get("audit_model_path", self.nominal_bank / "scene.xml"))
+        self.nominal_model = mujoco.MjModel.from_xml_string(
+            Path(
+                self.profile.get("audit_model_path", self.nominal_bank / "scene.xml")
+            ).read_text()
         )
         self.audit = NativeBoundaryAudit(self.nominal_model)
         receipt_path = self.nominal_bank / "stage-receipts.json"
@@ -886,28 +1023,39 @@ class WowRoboPhysicalValidator:
         native.qpos[:] = data.qpos
         mujoco.mj_forward(self.nominal_model, native)
         result = self.audit.audit(native)
-        minimum = (float("inf"), None)
-        for g in self.audit.targets:
-            mid = self.nominal_model.geom_dataid[g]
-            a, n = (
-                self.nominal_model.mesh_vertadr[mid],
-                self.nominal_model.mesh_vertnum[mid],
+        for group, geoms in (
+            ("target", self.audit.targets),
+            ("helper", self.audit.helper),
+        ):
+            minimum = (float("inf"), None)
+            for g in geoms:
+                mid = self.nominal_model.geom_dataid[g]
+                a, n = (
+                    self.nominal_model.mesh_vertadr[mid],
+                    self.nominal_model.mesh_vertnum[mid],
+                )
+                vertices = self.nominal_model.mesh_vert[a : a + n]
+                z = (
+                    vertices @ native.geom_xmat[g].reshape(3, 3)[2]
+                    + native.geom_xpos[g, 2]
+                )
+                value = float(z.min())
+                if value < minimum[0]:
+                    minimum = (
+                        value,
+                        self.nominal_model.geom(g).name
+                        or self.nominal_model.mesh(mid).name,
+                    )
+            result[group + "_table_minimum"] = {
+                "minimum_z_m": minimum[0],
+                "geom_name": minimum[1],
+            }
+            if minimum[0] < -0.0005:
+                result["candidate_rejected"] = True
+                result["candidate_rejection_reasons"].append(group + "_table")
+            result["max_sampled_penetration_m"] = max(
+                result["max_sampled_penetration_m"], max(0.0, -minimum[0])
             )
-            vertices = self.nominal_model.mesh_vert[a : a + n]
-            z = vertices @ native.geom_xmat[g].reshape(3, 3)[2] + native.geom_xpos[g, 2]
-            value = float(z.min())
-            if value < minimum[0]:
-                minimum = (value, self.nominal_model.geom(g).name)
-        result["target_table_minimum"] = {
-            "minimum_z_m": minimum[0],
-            "geom_name": minimum[1],
-        }
-        if minimum[0] < -0.0005:
-            result["candidate_rejected"] = True
-            result["candidate_rejection_reasons"].append("target_table")
-        result["max_sampled_penetration_m"] = max(
-            result["max_sampled_penetration_m"], max(0.0, -minimum[0])
-        )
         return result
 
     def _grip_pairs(self, stage):
@@ -940,9 +1088,14 @@ class WowRoboPhysicalValidator:
                 pairs.append((side, contact_target))
         return pairs
 
-    def _loaded_pads(self, data, pairs):
+    def _loaded_pads_source_extent(self, data, pairs):
+        """Count the complete physical inner finger, including its curved tip."""
+        return self._loaded_pads(data, pairs, source_extent=True)
+
+    def _loaded_pads(self, data, pairs, *, source_extent=False):
         m = self.model
         result = {side: {"fixed": 0.0, "moving": 0.0} for side, _ in pairs}
+        tip_limits = {}
         for side, target in pairs:
             target_id = m.body(target).id
             fixed = m.body(side + "_gripper").id
@@ -973,8 +1126,35 @@ class WowRoboPhysicalValidator:
                 point = (data.contact.pos[i] - data.site_xpos[site]) @ frame
                 normal = data.contact.frame[i, :3] * (1 if hand_geom == a else -1)
                 sign = 1 if hand == fixed else -1
+                tip_limit = 0.004
+                if source_extent:
+                    if hand_geom not in tip_limits:
+                        visual = mujoco.mj_name2id(
+                            m, mujoco.mjtObj.mjOBJ_GEOM, hand_name
+                        )
+                        if (
+                            visual >= 0
+                            and m.geom_type[visual] == mujoco.mjtGeom.mjGEOM_MESH
+                        ):
+                            mid = int(m.geom_dataid[visual])
+                            start, count = (
+                                int(m.mesh_vertadr[mid]),
+                                int(m.mesh_vertnum[mid]),
+                            )
+                            vertices = m.mesh_vert[start : start + count]
+                            axis = data.geom_xmat[visual].reshape(3, 3).T @ frame[:, 0]
+                            origin = float(
+                                (data.geom_xpos[visual] - data.site_xpos[site])
+                                @ frame[:, 0]
+                            )
+                            tip_limits[hand_geom] = float(
+                                np.max(vertices @ axis) + origin
+                            )
+                        else:
+                            tip_limits[hand_geom] = 0.004
+                    tip_limit = tip_limits[hand_geom]
                 if not (
-                    -0.035 < point[0] < 0.004
+                    -0.035 < point[0] <= tip_limit + 1e-9
                     and abs(point[1]) < 0.010
                     and sign * np.dot(normal, frame[:, 2]) > 0.25
                 ):

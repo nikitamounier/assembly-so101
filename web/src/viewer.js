@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RewardOverlay } from "./reward.js";
+import { CollisionBoxes } from "./collision-boxes.js";
 import { pointCloudWorldPositions } from "./point-cloud-data.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
@@ -68,6 +69,8 @@ export class ThreeSceneRenderer {
   }
 
   setScene(scene) {
+    this.collisionBoxes?.dispose();
+    this.collisionBoxes = null;
     this.cubeScene =
       scene.geoms.some((geom) => geom.name === "cube_geom") &&
       scene.geoms.some((geom) => geom.name.startsWith("nominal_path_"));
@@ -144,6 +147,7 @@ export class ThreeSceneRenderer {
       this.objects[index].position.set(x, y, z);
       this.objects[index].quaternion.set(qx, qy, qz, w);
     });
+    this.collisionBoxes?.update();
     if (snapshot.focus) {
       this.reviewFocus = snapshot.focus;
       this.preset("detail");
@@ -197,6 +201,7 @@ export class ThreeSceneRenderer {
   setLayers({ geometry, points }) {
     this.geometryVisible = geometry;
     this.pointsVisible = points;
+    this.collisionBoxes?.setCadVisible(geometry);
     for (const object of this.objects) object.visible = geometry;
     if (this.pointCloud) this.pointCloud.visible = points;
   }
@@ -289,6 +294,7 @@ export class ThreeSceneRenderer {
   }
 
   dispose() {
+    this.collisionBoxes?.dispose();
     this.clearPointCloud();
     this.rewardOverlay.clear();
     this.resize.disconnect();
@@ -321,6 +327,12 @@ export class MujocoSceneRenderer {
   hide() {
     this.frame.hidden = true;
   }
+  async close() {
+    const response = await fetch("/api/studio/stop", { method: "POST" });
+    if (!response.ok) throw new Error(await response.text());
+    this.frame.removeAttribute("src");
+    this.hide();
+  }
   dispose() {
     this.frame.remove();
   }
@@ -346,6 +358,11 @@ export class SceneView {
     this.threeHost.hidden = this.mode !== "three";
     if (this.mode === "mujoco") this.mujoco.frame.hidden = false;
   }
+  setCollisionBoxes(payload) {
+    this.three.collisionBoxes?.dispose();
+    this.three.collisionBoxes = new CollisionBoxes(this.three.scene, this.three.objects, payload);
+  }
+  setCollisionBoxesVisible(visible) { this.three.collisionBoxes?.setVisible(visible); }
   setRewardVisible(visible) { this.three.rewardOverlay.setVisible(visible); }
   setLayers(layers) {
     this.three.setLayers(layers);
@@ -361,7 +378,7 @@ export class SceneView {
   }
   async setMode(mode) {
     if (mode === "mujoco") await this.mujoco.activate();
-    else this.mujoco.hide();
+    else if (this.mode === "mujoco") await this.mujoco.close();
     this.threeHost.hidden = mode !== "three";
     this.mode = mode;
     if (mode === "three") this.three.resizeView();

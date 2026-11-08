@@ -43,7 +43,17 @@ async def isolation(request, handler):
 
 class ResetApplication:
     def __init__(
-        self, roots, studio_python, port, *, scene="so101", model=None, model_signature=None, state_spec=None
+        self,
+        roots,
+        studio_python,
+        port,
+        *,
+        scene="so101",
+        model=None,
+        model_signature=None,
+        state_spec=None,
+        point_config=None,
+        reward_config=None,
     ):
         if scene not in ("so101", "cube-trial", "wowrobo-components", "wowrobo-layout"):
             raise ValueError(f"Unknown viewer scene: {scene}")
@@ -81,8 +91,8 @@ class ResetApplication:
         )
         self.studio_python = Path(studio_python).expanduser().absolute()
         self.port = port
-        self.point_cloud = PolicyPointCloud(self.model, self.scene_name)
-        self.reward_regions = RewardRegions(self.model, self.model_signature)
+        self.point_cloud = PolicyPointCloud(self.model, self.scene_name, point_config=point_config)
+        self.reward_regions = RewardRegions(self.model, self.model_signature, config=reward_config)
         self.version = 0
         self.snapshot = None
         self.studio_process = None
@@ -228,6 +238,25 @@ class ResetApplication:
                 await asyncio.sleep(0.1)
             raise web.HTTPServiceUnavailable(text="WebViewer is still starting; try again")
 
+    async def stop_studio(self):
+        if self.studio_process and self.studio_process.poll() is None:
+            self.studio_process.terminate()
+            try:
+                await asyncio.to_thread(self.studio_process.wait, 5)
+            except subprocess.TimeoutExpired:
+                self.studio_process.kill()
+                await asyncio.to_thread(self.studio_process.wait)
+        self.studio_port = None
+        if self.log:
+            self.log.close()
+            self.log = None
+
+    async def stop_studio_handler(self, request):
+        self.check_origin(request)
+        async with self.start_lock:
+            await self.stop_studio()
+        return web.json_response(dict(stopped=True))
+
     async def proxy(self, request):
         if self.studio_process is None or self.studio_process.poll() is not None:
             raise web.HTTPServiceUnavailable(text="Start the MuJoCo view first")
@@ -286,13 +315,7 @@ class ResetApplication:
         try:
             yield
         finally:
-            if self.studio_process and self.studio_process.poll() is None:
-                self.studio_process.terminate()
-                try:
-                    await asyncio.to_thread(self.studio_process.wait, 5)
-                except subprocess.TimeoutExpired:
-                    self.studio_process.kill()
-                    await asyncio.to_thread(self.studio_process.wait)
+            await self.stop_studio()
             await self.client.close()
             if self.log:
                 self.log.close()
@@ -308,6 +331,7 @@ class ResetApplication:
         app.router.add_post("/api/select", self.select_handler)
         app.router.add_post("/api/reward-tolerance", self.reward_tolerance_handler)
         app.router.add_post("/api/studio", self.studio_handler)
+        app.router.add_post("/api/studio/stop", self.stop_studio_handler)
         app.router.add_get("/mujoco/{path:.*}", self.proxy)
         for path in ("/ui", "/state", "/model", "/drop"):
             app.router.add_get(path, self.proxy)

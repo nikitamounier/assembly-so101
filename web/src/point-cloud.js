@@ -51,7 +51,8 @@ export class PointCloudSection {
     this.empty.hidden = true;
     this.status.textContent = cloud.status;
     this.status.classList.toggle("preview", cloud.preview);
-    this.meta.textContent = `${cloud.count} points · ${cloud.shape.join(" × ")} · ${cloud.dtype} · World-aligned overlay`;
+    const budget = cloud.sampling_budget;
+    this.meta.textContent = `${cloud.count} points · ${cloud.shape.join(" × ")} · ${cloud.dtype} · World-aligned overlay${budget ? ` · Receiver: ${budget.feature} feature / ${budget.nearby} nearby / ${budget.context} context` : ""}`;
     this.meta.title = `Input: ${cloud.frame} frame · ${cloud.units}\nObservation: ${cloud.observation_signature}\nTensor: ${cloud.tensor_sha256}\nState: ${cloud.state_id}`;
     this.legend.replaceChildren(...cloud.groups.map((group) => {
       const label = document.createElement("span");

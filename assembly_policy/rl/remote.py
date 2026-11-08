@@ -560,11 +560,20 @@ def _serve(conn, nthread):
     except (EOFError, OSError) as e:
         raise _NoSlice() from e
     config_type, env_type = EnvConfig, BatchedAssemblyEnv
+    if init["ecfg"].get("suite") == "wowrobo":
+        from ..wowrobo.env import BatchedAssemblyEnv as env_type
+        from ..wowrobo.env import EnvConfig as config_type
     ecfg = config_type(**{**init["ecfg"], "nthread": nthread})
     if init.get("model_signature"):
-        from ..so101.resets import signature
+        if ecfg.suite == "wowrobo":
+            from ..wowrobo.runtime import load_runtime
 
-        if signature() != init["model_signature"]:
+            worker_signature = load_runtime(ecfg.profile_path)[2]
+        else:
+            from ..so101.resets import signature
+
+            worker_signature = signature()
+        if worker_signature != init["model_signature"]:
             raise ValueError("Worker geometry/source differs from the learner")
     n = len(init["state"])
     env = env_type(init["tasks"], np.zeros(n, dtype=np.int64), ecfg)

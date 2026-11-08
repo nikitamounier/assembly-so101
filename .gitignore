@@ -19,3 +19,13 @@ MUJOCO_LOG.TXT
 *.pem
 *.key
 *.p12
+
+# Cube dashboard build and operator state
+dashboards/cube/dist/
+operational/cube-trial-20261107/cluster.json
+operational/cube-trial-20261107/monitor-pins.json
+
+# Local credentials and worker connection tickets
+.credentials/
+.aws/
+**/server.json

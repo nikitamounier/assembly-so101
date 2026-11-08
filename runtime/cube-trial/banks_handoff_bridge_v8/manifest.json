@@ -1,0 +1,39 @@
+{
+  "model_signature": "9143fe305ee8c886e57e85d42b711f883e58913cac51b560a3b07dcb2386af9c",
+  "task_names": [
+    "cube_handoff"
+  ],
+  "family_names": [
+    "Loose cube",
+    "Left pickup",
+    "Converging transport",
+    "Pre-handoff",
+    "Dual grasp",
+    "Post handoff",
+    "Right transport",
+    "Near target",
+    "Placed, right hand holding",
+    "Partial right contact",
+    "Light right grasp"
+  ],
+  "state_spec": "mjSTATE_INTEGRATION",
+  "reset_distribution": "cube-handoff-acquisition-bridge-v8",
+  "train_per_family": 128,
+  "eval_per_family": 32,
+  "mujoco_version": "4.0.0",
+  "custom_collision": false,
+  "pre_handoff_right_clearance_min_m": 0.005,
+  "portable_model_signature": "edaf7d364fc93301c71f056798c0530f023fb888c0df1f5a9eb345948a65fc20",
+  "right_transport_source_policy_iteration": 6010,
+  "right_transport_source_checkpoint_sha256": "76fdf0c4cd09051d313b36bd32686f975444e54d110ceecaa1594ade91b2fb4e",
+  "right_transport_source": "successful dual_grasp/post_handoff native rollouts; exact integration states including velocities/controls; no geometric refit",
+  "other_families_unchanged": true,
+  "reset_context_sha256": "b4218eab5faf02bf86da355658ee01694761db0ba48e32fe7478de51897a388b",
+  "dynamic_reset_context": "preserve actual5frame observation history, previous action, right-grasp lookback age; already-picked-up prefix derived from verified source reset and irreversible carry latch",
+  "new_families": [
+    "partial_right_contact",
+    "light_right_grasp"
+  ],
+  "existing_rows_unchanged": true,
+  "bridge_contact_contract": "MuJoCo loaded native contacts; left supports>55%cubeweight; partial one pad, opposite clear>0.2mm; light both pads0.05\u20133.5N"
+}

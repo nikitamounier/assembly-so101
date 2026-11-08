@@ -1,1 +1,4 @@
 assembly_policy/viewer/static/** linguist-generated=true -whitespace
+
+# Curated native cube reset snapshot (source/runtime input, not run output).
+runtime/cube-trial/**/*.npz binary

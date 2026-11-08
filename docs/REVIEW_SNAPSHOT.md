@@ -11,3 +11,5 @@ Frontend checks: `cd web && npm ci && npm test`. Python setup is defined in `pyp
 Credentials, original vendor CAD, generated meshes/contact grids/reset banks, checkpoints, run receipts and compiled plugins are excluded. CAD-backed execution requires matching local runtime assets; historical report links to excluded evidence and local paths will need those assets. Source provenance and build instructions remain in the companion notices, lock files and documentation.
 
 This is work in progress. Geometric seating rewards and viewer poses do not establish physical training admission, settling, support retention or hardware calibration. No experiments are launched or modified by this publication.
+
+The cube trial now has a [portable setup and dashboard guide](CUBE_TRIAL.md), a curated checksum-pinned eleven-family reset snapshot under `runtime/cube-trial/`, and dashboard source under `dashboards/cube/`. Unlike transient run outputs, these small NPZ reset inputs are intentionally published; original assets are fetched into ignored storage.

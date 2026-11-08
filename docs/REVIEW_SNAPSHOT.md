@@ -8,7 +8,7 @@ Start with `assembly-reference/User Intent.md` and `assembly-reference/docs/user
 
 Frontend checks: `cd web && npm ci && npm test`. Python setup is defined in `pyproject.toml`; provider dependencies are in `requirements-providers.txt`. CLI entry points: `python -m assembly_policy.viewer --help` and `python -m assembly_policy.compute --help`.
 
-The exact viewer meshes, saved-state bank and frozen overlay contracts are included under `runtime/wowrobo-viewer/`, with checksums and upstream licenses. Credentials, original vendor CAD, unrelated generated meshes/contact grids/reset banks, checkpoints, compute-provider receipts and compiled plugins remain excluded. The complete viewer needs no sibling checkout or private asset download. Other training workflows and historical report links can still require their separate runtime data.
+The exact viewer meshes, saved-state bank and frozen overlay contracts are included under `runtime/wowrobo-viewer/`, with checksums and upstream licenses. Original SO101 STEP source and grouped component exports are now included under `cad/wowrobo/`, with licenses and source hashes. Credentials, unrelated generated meshes/contact grids/reset banks, checkpoints, compute-provider receipts and compiled plugins remain excluded. The complete viewer needs no sibling checkout or private asset download. Other training workflows and historical report links can still require their separate runtime data.
 
 This is work in progress. Geometric seating rewards and viewer poses do not establish physical training admission, settling, support retention or hardware calibration. No experiments are launched or modified by this publication.
 

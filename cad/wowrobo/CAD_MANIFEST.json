@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "repository": "nikitamounier/assembly-so101",
+  "upstream_revision": "a758567c3978dfeefe282ede0500085a48fe8f78",
+  "upstream_url": "https://github.com/TheRobotStudio/SO-ARM100",
+  "original_step_files": 10,
+  "grouped_component_step_files": 7,
+  "files": {
+    "original-source/STEP/SO101/SO101 Assembly.step": {
+      "bytes": 20496014,
+      "sha256": "f754be35708382b05ce65768ae33c612f91dca11ad19d14807dc637eb944ba3d",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/SO101 Assembly.step"
+    },
+    "original-source/STEP/SO101/Base_SO101.step": {
+      "bytes": 1092553,
+      "sha256": "95209ec6a3ca06b1ec084f72d9c73324bdcf9d0e17213ef293f45f95a3993288",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Base_SO101.step"
+    },
+    "original-source/STEP/SO101/Base_motor_holder_SO101.step": {
+      "bytes": 300211,
+      "sha256": "f13462eea875727ae7cec7d190c59642444b9076c76cf2423bbe3c5b6c469587",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Base_motor_holder_SO101.step"
+    },
+    "original-source/STEP/SO101/Motor_holder_SO101_Base.step": {
+      "bytes": 352248,
+      "sha256": "fb2ef4603324ddea53ab655f6ecd48c7f5a72dd7603e57e92c60c0a8e67a9083",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Motor_holder_SO101_Base.step"
+    },
+    "original-source/STEP/SO101/Motor_holder_SO101_Wrist.step": {
+      "bytes": 346197,
+      "sha256": "e58d86502535a5a4936677e9d934f1bda9417e83f7480f475061728c146739c4",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Motor_holder_SO101_Wrist.step"
+    },
+    "original-source/STEP/SO101/Rotation_Pitch_SO101.step": {
+      "bytes": 370844,
+      "sha256": "a392681efb05bf4009c17115a9b3e37bbee9d2fcfe25e2066b11b95aaa380915",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Rotation_Pitch_SO101.step"
+    },
+    "original-source/STEP/SO101/Upper_arm_SO101.step": {
+      "bytes": 551437,
+      "sha256": "efa19a6dd2ccb459248500c76629cfa840630e7e15d9e146394d31da1525dd61",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Upper_arm_SO101.step"
+    },
+    "original-source/STEP/SO101/Under_arm_SO101.step": {
+      "bytes": 626245,
+      "sha256": "677a1a57efeddc439d97ebdc309b1c2853cfcb83f14c7d695c312fcf13a89713",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Under_arm_SO101.step"
+    },
+    "original-source/STEP/SO101/Wrist_Roll_Pitch_SO101.step": {
+      "bytes": 1203030,
+      "sha256": "39c5e78647d471ab4e4328ec6d00f06ad90dc48a0b1ffe4baf1a951c1304f74b",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/STEP/SO101/Wrist_Roll_Pitch_SO101.step"
+    },
+    "original-source/Optional/SO101_Wrist_Cam_Hex-Nut_Mount_32x32_UVC_Module/stl/SO-ARM101_camera_wrist_mount.step": {
+      "bytes": 84186,
+      "sha256": "abba98321af20b6aadf0a82ac3758a27745efae047c662489026c6991f241f38",
+      "kind": "upstream STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/source/Optional/SO101_Wrist_Cam_Hex-Nut_Mount_32x32_UVC_Module/stl/SO-ARM101_camera_wrist_mount.step"
+    },
+    "grouped-components-v2/assembly_pin.step": {
+      "bytes": 10279,
+      "sha256": "c8a28af3715282f6e073dc6d94371abaa1fce04ea8a1b9168494673490427b22",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/assembly_pin.step"
+    },
+    "grouped-components-v2/base_servo.step": {
+      "bytes": 11928579,
+      "sha256": "eebf9d805d66677b6a42de8d98f62defed0f4a40f1d049a1566d5398df5449e7",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/base_servo.step"
+    },
+    "grouped-components-v2/base_side_cover.step": {
+      "bytes": 966553,
+      "sha256": "2f6c02822779b19e0ef7b836a07634c70208583836bed939ad0b7c241cc386af",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/base_side_cover.step"
+    },
+    "grouped-components-v2/camera_mount.step": {
+      "bytes": 219888,
+      "sha256": "eda8b1764b38381a64eb3ce79fe7113cc80f420a1408dcfc8384e3f4fdc141e5",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/camera_mount.step"
+    },
+    "grouped-components-v2/forearm_module.step": {
+      "bytes": 11770693,
+      "sha256": "fcd23acdbf9fe22427710e9321940f1a2b1eafbb60ea235d3706bf8ba9f8322b",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/forearm_module.step"
+    },
+    "grouped-components-v2/shoulder_connector.step": {
+      "bytes": 2172368,
+      "sha256": "03dea7226bbad13c992b77fea55698c26eed580a583027ac2fc13ae02e61f376",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/shoulder_connector.step"
+    },
+    "grouped-components-v2/upper_arm_module.step": {
+      "bytes": 10715584,
+      "sha256": "9bfce8724fdb4301c1801a964ea421d9812d719acc18b0bd9099649a078b6185",
+      "kind": "grouped review STEP",
+      "source_path": "robotics-assembly-3.0/assets_local/wowrobo/components-v2/upper_arm_module.step"
+    },
+    "licenses/NOTICE": {
+      "bytes": 1328,
+      "sha256": "54fce45c154d142723a3e797531517ce35f5cb7a8f42e17b8edf82e77d4ce8e2",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/NOTICE"
+    },
+    "licenses/SO-ARM100.LICENSE": {
+      "bytes": 11358,
+      "sha256": "c95bae1d1ce0235ecccd3560b772ec1efb97f348a79f0fbe0a634f0c2ccefe2c",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/SO-ARM100.LICENSE"
+    },
+    "licenses/ICL-so101.LICENSE": {
+      "bytes": 1068,
+      "sha256": "836989f75e782c256037af7be8ebe5a00c81f38b64155647dad0affb79f00bcb",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/ICL-so101.LICENSE"
+    },
+    "licenses/source-lock.json": {
+      "bytes": 3429,
+      "sha256": "11819bd6d55406a4e850dd9e73374e425049b100189faad27a2cef63e740673e",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/source-lock.json"
+    },
+    "licenses/camera-source-lock.json": {
+      "bytes": 1457,
+      "sha256": "ccb64c6463ef9dbf4937b300632e27e6c42b690861e4748c979853876b0710a7",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/camera-source-lock.json"
+    },
+    "licenses/helper-lock.json": {
+      "bytes": 2254,
+      "sha256": "42d833bc21262cdd0958e3068695f4541e94e6aab0bff355d3e44d564643281b",
+      "kind": "license/provenance",
+      "source_path": "robotics-assembly-3.0/cad/wowrobo/helper-lock.json"
+    },
+    "assembly_pin.scad": {
+      "bytes": 414,
+      "sha256": "da5673909dd9fcdfc7336f4a551d7e5aa02d6f66076c5da9feb8e68df812ba5e",
+      "kind": "current published stabilizer pin",
+      "source_path": "assembly-so101/cad/wowrobo/assembly_pin.scad"
+    },
+    "assembly_pin.step": {
+      "bytes": 10279,
+      "sha256": "b42fec3b677d44a916b3060091a59a73295f14defb44234b7e40a8ca6414923b",
+      "kind": "current published stabilizer pin",
+      "source_path": "assembly-so101/cad/wowrobo/assembly_pin.step"
+    },
+    "assembly_pin_print_mm.stl": {
+      "bytes": 51284,
+      "sha256": "e3a796224770627296be77971f5dd5cec982dea48c8ddb6427152e604368969f",
+      "kind": "current published stabilizer pin",
+      "source_path": "assembly-so101/cad/wowrobo/assembly_pin_print_mm.stl"
+    }
+  }
+}

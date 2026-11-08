@@ -1423,3 +1423,8 @@ User requests state selection beyond family/task selection. Added Starting state
 ## 2026-11-07 [codex] Personal repository publication
 
 Human explicitly corrected the publication target to nikitamounier and requested all current work in their own repository. Refreshed the companion assembly source snapshot in nikitamounier/assembly-so101; no commit or push to the shared upstream. Source/reports only; credentials, original vendor CAD, generated experiment payloads/checkpoints and provider receipts excluded. Portable licensed viewer runtime remains included.
+
+
+## 2026-11-08 [codex] Original CAD publication requested
+
+Human explicitly requests uploading the original CAD too, superseding the earlier publication exclusion for these files. Added 10 hash-verified upstream SO101 STEP files and 7 grouped-component STEP exports under cad/wowrobo in the personal repository, with full license/provenance records; current stabilizer pin remains distinct from the historical grouped pin. These source files are not a new physics release or proof of hardware fit. CAD archive and checksums are release assets; live jobs unchanged.

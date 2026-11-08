@@ -19,6 +19,8 @@ The user requested separate user-intent files to review what is happening. [Open
 
 ## Latest agreement
 
+- **CAD publication, November8:** Human explicitly requests including the original CAD as well. Publish available upstream SO101 STEP files and grouped review component STEP exports to `nikitamounier/assembly-so101`, including a downloadable CAD release asset, licenses and checksums. Keep source originals distinct from later mesh/contact repairs; no changes to training or live experiments.
+
 - **Publication destination, November7 (explicit human correction):** Publish the current assembly source, runtime work and viewer to `nikitamounier/assembly-so101`. Do not push this work to Alessandro’s repository. This `assembly-reference/` tree is the source snapshot carried by Nikita’s repository; historical upstream references describe provenance.
 
 - **GPU acquisition and next Warp accelerations, November7:** User directs prepare-main-run to acquire maximum attainable quick_preemptible GPUs under the four-job allowance, balanced across available job slots, and update its existing availability monitor. Main owner handles acquisition/idempotent monitoring while preserving active learner/CPU leases and unrelated allocations. Here implement conservative GPU SDF-region rejection/contact-winner bounds and incorporate qualified relevant slowdown-chat advances, retaining fallback/physical validation. Native-v15 remains live until separate Warp qualification and versioned activation. [Work/evidence](outputs/mjwarp-region-20261107/README.md).

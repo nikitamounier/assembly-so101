@@ -80,10 +80,9 @@ class Geometry:
         local = np.einsum("...ji,...nj->...ni", r[..., left, :, :], world-p[..., left, None, :])
         return (10*local).reshape(p.shape[:-2]+(1344,))
 
-    def observations(self, q, action):
+    def proprio(self, q, action, p, r):
         from scipy.spatial.transform import Rotation
 
-        p, r = self.fk(q)
         tp, tr = self.tcp(p, r)
         quat = np.roll(Rotation.from_matrix(tr.reshape(-1, 3, 3)).as_quat(), 1, axis=-1)
         quat = quat.reshape(len(q), 2, 4)
@@ -97,7 +96,11 @@ class Geometry:
         prop = np.concatenate([np.concatenate([tp, quat, linear, angular], axis=-1).reshape(len(q), 26),
                                q[:, self.ctrl], previous], axis=1)
         history = np.maximum(0, np.arange(len(q)-1)[:, None] + np.arange(-4, 1))
-        return self.cloud(p[:-1], r[:-1]), prop[history].reshape(-1, 250).astype(np.float32)
+        return prop[history].reshape(-1, 250).astype(np.float32)
+
+    def observations(self, q, action):
+        p, r = self.fk(q)
+        return self.cloud(p[:-1], r[:-1]), self.proprio(q, action, p, r)
 
 
 def bake(args):
@@ -183,14 +186,16 @@ class MujocoFK:
 class BatchedIK:
     """Linearize the reference arm once, then solve nearby poses in batches."""
 
-    def __init__(self, geometry):
+    def __init__(self, geometry, *, side=0, rows=None):
         self.geometry = geometry
+        self.side = side
         a = geometry.a
         q = a["q"]
-        self.indices = geometry.ctrl[:5]
-        self.lo, self.hi = a["joint_bounds"][:5].T
-        t = a["time"]
-        self.rows = np.flatnonzero(t < a["pickup_time"] + 1.75)
+        arm = slice(side*6, side*6+5)
+        self.indices = geometry.ctrl[arm]
+        self.lo, self.hi = a["joint_bounds"][arm].T
+        self.rows = (np.flatnonzero(a["time"] < a["pickup_time"] + 1.75)
+                     if rows is None else rows)
         q = q[self.rows]
         p, r = self.tcp(q)
         perturb = np.repeat(q[None], 5, axis=0)
@@ -205,7 +210,7 @@ class BatchedIK:
 
     def tcp(self, q):
         p, r = self.geometry.tcp(*self.geometry.fk(q))
-        return p[..., 0, :], r[..., 0, :, :]
+        return p[..., self.side, :], r[..., self.side, :, :]
 
     @staticmethod
     def rot_delta(target, actual):

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "functions": {"api/read.js": {"maxDuration": 30}},
+  "rewrites": [
+    {"source": "/cube/api/:path*", "destination": "/api/read?scope=cube&path=:path*"},
+    {"source": "/bc/api/:path*", "destination": "/api/read?scope=bc&path=:path*"},
+    {"source": "/api/:path*", "destination": "/api/read?path=:path*"}
+  ],
+  "headers": [{"source": "/(.*)", "headers": [
+    {"key": "Cross-Origin-Opener-Policy", "value": "same-origin"},
+    {"key": "Cross-Origin-Embedder-Policy", "value": "require-corp"},
+    {"key": "X-Content-Type-Options", "value": "nosniff"}
+  ]}]
+}

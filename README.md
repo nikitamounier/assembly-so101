@@ -6,7 +6,7 @@ details, seating reward regions, policy point clouds, both renderers and the
 final-module comparison clips.
 
 ```sh
-git clone --branch nikita/so101-acceleration-cleanup https://github.com/nikitamounier/assembly-so101.git
+git clone https://github.com/nikitamounier/assembly-so101.git
 cd assembly-so101
 bash scripts/setup_viewer.sh
 bash scripts/run_viewer.sh
@@ -28,3 +28,8 @@ statuses, including rejected states.
 ## Current assembly and training source
 
 The current native MuJoCo and experimental Warp code, reset-bank generation, tests and research reports are included in [`assembly-reference/`](assembly-reference/). See [source overview](docs/REVIEW_SNAPSHOT.md) and [snapshot hashes](docs/ASSEMBLY_SOURCE_SNAPSHOT.json). This work is published to **nikitamounier/assembly-so101**; upstream names in historical notes describe provenance. Original STEP and grouped assembly CAD are included under [`cad/wowrobo/`](cad/wowrobo/), with upstream licenses and provenance. Generated training data, checkpoints and credentials stay local; the state bank and CAD bundle are downloadable release assets.
+
+## Training dashboard and hardware
+
+- [Training dashboard and saved-state views](assembly-dashboard/README.md)
+- [Physical SO-101 calibration and teleoperation](hardware/so101/README.md)

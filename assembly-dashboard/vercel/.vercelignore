@@ -1,0 +1,8 @@
+.env*
+.git/
+.vercel/
+node_modules/
+scripts/
+public/data/
+README.md
+publication-*.json

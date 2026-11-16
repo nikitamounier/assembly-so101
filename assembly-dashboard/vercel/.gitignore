@@ -1,0 +1,6 @@
+.vercel/
+.env*
+node_modules/
+public/data/
+publication-*.json
+.vercel

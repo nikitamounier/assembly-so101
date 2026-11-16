@@ -1,0 +1,7 @@
+{
+  "name": "assembly-results",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node scripts/build.mjs"},
+  "dependencies": {"@vercel/blob": "2.8.0"}
+}

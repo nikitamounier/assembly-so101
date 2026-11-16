@@ -36,9 +36,6 @@ def thread_model(push_only=False):
     ET.SubElement(screw, "joint", name="turn", type="hinge", axis="0 0 1", armature=".000002")
     for e in list(xml.find("actuator")):
         xml.find("actuator").remove(e)
-    for e in list(xml.find("extension")):
-        if e.get("plugin") == "so101.contact_driver":
-            xml.find("extension").remove(e)
     # Slow controlled rotation; no prescribed axial motion.
     ET.SubElement(xml.find("actuator"), "velocity", joint="turn", kv=".0003", forcerange="-.002 .002")
     m = mujoco.MjModel.from_xml_string(ET.tostring(xml, encoding="unicode"))

@@ -9,6 +9,8 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from .scene import PARTS
+
 STATE_SPEC = mujoco.mjtState.mjSTATE_FULLPHYSICS
 
 
@@ -26,7 +28,8 @@ class Trajectory:
         from .scene import ROOT
 
         self.plugin_hashes = {
-            p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT / "plugin/build").glob("*.so")
+            name: hashlib.sha256((ROOT / "plugin/build" / name).read_bytes()).hexdigest()
+            for name in ("libassemblenist_sdf.so", "libso101_contact_search.so", "libso101_screw_head.so")
         }
 
     def state(self):
@@ -178,7 +181,7 @@ def render(path, output=None, fps=25, playback_speed=1.0):
         if key in closeup:
             setattr(detail, key, float(closeup[key]))
     focus_offset = np.asarray(closeup.get("offset", [0, 0, 0.025]), dtype=float)
-    focus = "driver" if report.get("task") == "tool_pickup" else "motor"
+    focus = report.get("task") if report.get("task") in PARTS else "motor"
     learned = bool(report.get("learned_policy", False))
     title = (
         "NATIVE PHYSICS | TRAINED CHECKPOINT POLICY"

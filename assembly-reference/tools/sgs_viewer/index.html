@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SGS · State explorer</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><div><span class="eyebrow">ROBOTICS ASSEMBLY / STATE LIBRARY</span><h1>SGS state explorer</h1></div><div class="identity"><span id="profile">Loading export…</span><span id="total"></span></div></header>
+  <main>
+    <section class="toolbar" aria-label="Filter states">
+      <label class="bank">Collection<select id="bank"><option value="">All current collections</option></select></label>
+      <label>Task<select id="task"><option value="">All tasks</option></select></label>
+      <label>Family<select id="family"><option value="">All families</option></select></label>
+      <label>Split<select id="split"><option value="">Train + Eval</option><option value="train">Train</option><option value="eval">Eval</option></select></label>
+      <label>Qualification<select id="status"><option value="">All entries</option><option value="qualified">Qualified SGS</option><option value="loose baseline">Loose baseline</option></select></label>
+      <label>My review<select id="review"><option value="">All</option><option value="unreviewed">Unreviewed</option><option value="reviewed">Reviewed</option><option value="flagged">Flagged</option></select></label>
+      <label class="search">Search<input id="search" type="search" placeholder="State ID or seed…" autocomplete="off"></label>
+      <label>Sort<select id="sort"><option value="source">Task / family</option><option value="overlap">Material overlap ↓</option><option value="depth">Native depth ↓</option><option value="seed">Seed</option></select></label>
+      <button id="clear" class="quiet">Reset filters</button>
+    </section>
+    <details class="coverage" open><summary>Coverage <span id="coverage-note"></span></summary><div id="coverage"></div></details>
+    <div class="workspace">
+      <section class="library" aria-label="Saved states">
+        <div class="listbar"><strong id="count" aria-live="polite">Loading…</strong><span id="review-count"></span><button id="export-reviews" class="quiet">Export my reviews</button></div>
+        <div id="scroller" tabindex="0" aria-label="Scrollable state grid"><div id="spacer"></div><div id="tiles"></div><p id="empty" hidden>No states match these filters.</p></div>
+      </section>
+      <aside class="inspector" aria-label="Selected state">
+        <div class="inspect-head"><div><span id="selection-number" class="eyebrow">SELECT A STATE</span><h2 id="selection-title">Saved snapshot</h2></div><div class="nav"><button id="previous" aria-label="Previous state">←</button><button id="next" aria-label="Next state">→</button></div></div>
+        <div class="view-tabs" role="group" aria-label="Inspection view"><button data-view="side" aria-pressed="true">Side</button><button data-view="top" aria-pressed="false">Top</button><button data-view="detail" aria-pressed="false">Close-up</button><button data-view="3d" aria-pressed="false">3D orbit</button></div>
+        <div id="visual"><img id="preview" alt="Selected saved state"><div id="three" hidden></div><p id="visual-message" role="status"></p></div>
+        <div class="visual-foot"><span id="view-hint">Native MuJoCo snapshot</span><a id="original" target="_blank" rel="noopener">Open image ↗</a><button id="focus-3d" class="quiet" hidden>Focus part</button><button id="reset-3d" class="quiet" hidden>Whole scene</button></div>
+        <div class="review-actions"><button id="mark-reviewed">✓ Reviewed</button><button id="mark-flagged">⚑ Flag</button><span id="review-state"></span></div>
+        <dl id="facts"></dl>
+        <details class="metadata"><summary>Saved metadata & qualification receipts</summary><pre id="metadata">Select a state.</pre></details>
+        <p class="scope">Images and 3D show saved starting states. They do not show learned motion or a physics replay. Review marks stay in this browser and do not change training eligibility.</p>
+      </aside>
+    </div>
+    <details class="provenance"><summary>Export identity & historical collections</summary><p id="export-info"></p><a href="render_receipt.json" target="_blank">Full rendering receipt ↗</a><ul id="excluded"></ul></details>
+    <p id="error" role="alert" hidden></p>
+  </main>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

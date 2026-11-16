@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><title>Hiwonder assembly · Quest</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<main id="viewport" aria-label="SO101 immersive stereo assembly simulation"></main>
+<header><div id="mode" class="pill">DISABLED</div><div id="connection" hidden></div></header>
+<aside>
+ <div class="eyebrow" hidden>STEREO 3D WORKSPACE</div><h1 hidden>Assemble by hand.<br>In simulation.</h1>
+ <p id="guide" hidden>Close-up 3D assembly with head tracking and two wrist close-ups.</p>
+ <div class="controls"><button id="enter">Enter Quest VR</button><button id="disable">Disable / edit panels</button><button id="stop" class="danger">STOP</button><button id="save">Save wrist layout</button><button id="reset-panels">Reset panels</button></div>
+ <label><input id="show-wrists" type="checkbox"> Wrist close-ups</label>
+ <p class="keys" hidden>Y: Enable / Hold · Grip anywhere: move that arm<br>Trigger: jaw · X: recenter · B: Stop<br>After Stop: release B / grips, hold B 1s, then press Y</p>
+ <details id="hybrid-controls" hidden><summary>Live camera + simulated arms</summary>
+  <p><a href="/camera.html" target="_blank" rel="noopener">Open camera sender on the Mac</a>. Select the iPhone there and press Start.</p>
+  <label><input id="hybrid-mode" type="checkbox"> Use live background</label>
+  <label>Robot opacity <input id="robot-opacity" type="range" min="0" max="100" value="45"> <output id="opacity-value">45%</output></label>
+  <label>Background size <input id="phone-scale" type="range" min="50" max="200" value="100"></label>
+  <label>Background left/right <input id="phone-x" type="range" min="-30" max="30" value="0"></label>
+  <label>Background up/down <input id="phone-y" type="range" min="-30" max="30" value="0"></label>
+  <button id="reset-alignment">Reset background alignment</button>
+  <p id="phone-status" role="status">No live camera selected. Simulation only.</p>
+  <p>Arrange while Disabled, then enter VR. This is an approximate visual overlay; the simulated arms cannot detect real objects.</p>
+ </details>
+</aside>
+<footer hidden><div><span class="dot measured"></span> Measured tool <span class="dot goal"></span> Controller / clutch goal <b>1.00×</b> metric gain</div><div id="alignment">Desktop preview · synthetic MuJoCo cameras · no headset evidence</div><div id="detail">Native assembly geometry · stereo depth and head tracking · host physics.</div></footer>
+<div id="notice" role="status"></div><script type="module" src="/app.js"></script>
+</body></html>

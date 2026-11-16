@@ -1,0 +1,18 @@
+{
+  "suite": "so101",
+  "tasks": "all",
+  "physics": "native",
+  "device": "cuda",
+  "envs": 8192,
+  "steps": 32,
+  "threads": null,
+  "iterations": 10000,
+  "max_hours": 1000000000.0,
+  "save_every": 10,
+  "contact_depth_m": 0.0005,
+  "stability": "pose",
+  "safety_penalty": 1.0,
+  "sampler_floor_mass": 1.6,
+  "seed": 20261105,
+  "allow_task_mechanics_failure": false
+}

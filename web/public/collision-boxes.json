@@ -1,0 +1,1304 @@
+{
+  "schema": 1,
+  "physics_signature": "f881fdddcaaee07cd546f9ef11f14a2fd1c929f516f74a2d219026a110b2aa5e",
+  "label": "Bare MuJoCo collision boxes",
+  "boxes": [
+    {
+      "name": "physical_helper_8__contact",
+      "anchor": "physical_helper_8",
+      "body": "left_base",
+      "half_size": [
+        0.017100471071898937,
+        0.0238001998513937,
+        0.041456056758761406
+      ],
+      "position": [
+        0.0009241113439202317,
+        -0.0013959668576717422,
+        0.006463756784796734
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_9__contact",
+      "anchor": "physical_helper_9",
+      "body": "left_base",
+      "half_size": [
+        0.04206835851073265,
+        0.05586005002260208,
+        0.05546842887997627
+      ],
+      "position": [
+        0.005950614809989957,
+        -0.003950763493776339,
+        1.3377517461776747e-05
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_10__contact",
+      "anchor": "physical_helper_10",
+      "body": "left_base",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677238342607e-09,
+        0.0001793205738067621,
+        -0.0010745031759142939
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_11__contact",
+      "anchor": "physical_helper_11",
+      "body": "left_base",
+      "half_size": [
+        0.0038008217234164476,
+        0.021000109612941742,
+        0.025499999523162842
+      ],
+      "position": [
+        0.0014046255964785947,
+        2.0284205675126816e-05,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_12__contact",
+      "anchor": "physical_helper_12",
+      "body": "left_shoulder",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.793967723846443e-09,
+        0.00017932057380676362,
+        -0.0010745031759142906
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_13__contact",
+      "anchor": "physical_helper_13",
+      "body": "left_shoulder",
+      "half_size": [
+        0.014277442824095488,
+        0.019092625007033348,
+        0.02767095435410738
+      ],
+      "position": [
+        -9.375484660267942e-05,
+        -0.0011617876589298276,
+        -0.0014138510450720802
+      ],
+      "quaternion": [
+        1.0000000000000002,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_14__contact",
+      "anchor": "physical_helper_14",
+      "body": "left_shoulder",
+      "half_size": [
+        0.023066088557243347,
+        0.03532704059034586,
+        0.04910299368202686
+      ],
+      "position": [
+        0.00026371143758297135,
+        -0.006267788819968731,
+        0.0007422212511301088
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_15__contact",
+      "anchor": "physical_helper_15",
+      "body": "left_upper_arm",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677239800087e-09,
+        0.00017932057380676226,
+        -0.0010745031759142939
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_16__contact",
+      "anchor": "physical_helper_16",
+      "body": "left_upper_arm",
+      "half_size": [
+        0.01326835947111249,
+        0.033719442784786224,
+        0.07122589275240898
+      ],
+      "position": [
+        0.0009455620311200683,
+        -0.0019005499780178207,
+        0.0017992220818996564
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_17__contact",
+      "anchor": "physical_helper_17",
+      "body": "left_lower_arm",
+      "half_size": [
+        0.013526722323149443,
+        0.032755629159510136,
+        0.06634929776191711
+      ],
+      "position": [
+        -0.0008548791520297583,
+        -0.0038404492661357164,
+        -0.0010699555277824447
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_18__contact",
+      "anchor": "physical_helper_18",
+      "body": "left_lower_arm",
+      "half_size": [
+        0.014275015331804752,
+        0.01854533888399601,
+        0.028256251476705074
+      ],
+      "position": [
+        -8.770357817410919e-05,
+        -0.0005779098719358451,
+        -0.0018142359331250204
+      ],
+      "quaternion": [
+        1.0000000000000002,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_19__contact",
+      "anchor": "physical_helper_19",
+      "body": "left_lower_arm",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677236649637e-09,
+        0.00017932057380676356,
+        -0.001074503175914297
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_20__contact",
+      "anchor": "physical_helper_20",
+      "body": "left_wrist",
+      "half_size": [
+        0.012400000356137753,
+        0.020748230628669262,
+        0.02521883323788643
+      ],
+      "position": [
+        1.862645149230966e-09,
+        -0.0011876532807946246,
+        -0.00012547336518764404
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_21__contact",
+      "anchor": "physical_helper_21",
+      "body": "left_wrist",
+      "half_size": [
+        0.01798929926007986,
+        0.03579448349773884,
+        0.047373900189995766
+      ],
+      "position": [
+        -0.0016506155952811298,
+        -0.005804041400551817,
+        0.0022441018372774215
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_22__contact",
+      "anchor": "physical_helper_22",
+      "body": "left_gripper",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677223063175e-09,
+        0.00017932057380676362,
+        -0.0010745031759142928
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_23__contact",
+      "anchor": "physical_helper_23",
+      "body": "left_gripper",
+      "half_size": [
+        0.007310907822102308,
+        0.008010517805814743,
+        0.015623323619365692
+      ],
+      "position": [
+        0.002612656324287509,
+        -0.015185349703798253,
+        0.05897096566229846
+      ],
+      "quaternion": [
+        -0.11789533026359532,
+        0.7433230442040427,
+        -0.6442246228033507,
+        -0.1361843545755339
+      ],
+      "role": "finger",
+      "contype": 4,
+      "conaffinity": 3
+    },
+    {
+      "name": "physical_helper_24__contact",
+      "anchor": "physical_helper_24",
+      "body": "left_moving_jaw_so101_v1",
+      "half_size": [
+        0.008496517315506935,
+        0.01612325944006443,
+        0.007579243741929531
+      ],
+      "position": [
+        0.0007982023789125372,
+        -0.0004434203231511633,
+        0.04121571243515866
+      ],
+      "quaternion": [
+        0.7071223450596419,
+        -0.7060915311066372,
+        0.026435763993451614,
+        0.026718705038262416
+      ],
+      "role": "finger",
+      "contype": 4,
+      "conaffinity": 3
+    },
+    {
+      "name": "physical_helper_25__contact",
+      "anchor": "physical_helper_25",
+      "body": "left_camera_rig",
+      "half_size": [
+        0.016179446130990982,
+        0.020245318301022053,
+        0.03548888675868511
+      ],
+      "position": [
+        -0.0005040206015110054,
+        0.00013867672532796838,
+        -0.0005293395370245018
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_26__contact",
+      "anchor": "physical_helper_26",
+      "body": "left_camera_module",
+      "half_size": [
+        0.02168209757655859,
+        0.021441617980599403,
+        0.018440821208059788
+      ],
+      "position": [
+        0.00015241745859384529,
+        -0.001968178898096085,
+        0.00230803992599249
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_31__contact",
+      "anchor": "physical_helper_31",
+      "body": "right_base",
+      "half_size": [
+        0.017100471071898937,
+        0.0238001998513937,
+        0.041456056758761406
+      ],
+      "position": [
+        0.0009241113439202317,
+        -0.0013959668576717422,
+        0.006463756784796734
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_32__contact",
+      "anchor": "physical_helper_32",
+      "body": "right_base",
+      "half_size": [
+        0.04206835851073265,
+        0.05586005002260208,
+        0.05546842887997627
+      ],
+      "position": [
+        0.005950614809989957,
+        -0.003950763493776339,
+        1.3377517461776747e-05
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_33__contact",
+      "anchor": "physical_helper_33",
+      "body": "right_base",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677238342607e-09,
+        0.0001793205738067621,
+        -0.0010745031759142939
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_34__contact",
+      "anchor": "physical_helper_34",
+      "body": "right_base",
+      "half_size": [
+        0.0038008217234164476,
+        0.021000109612941742,
+        0.025499999523162842
+      ],
+      "position": [
+        0.0014046255964785947,
+        2.0284205675126816e-05,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_35__contact",
+      "anchor": "physical_helper_35",
+      "body": "right_shoulder",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.793967723846443e-09,
+        0.00017932057380676362,
+        -0.0010745031759142906
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_36__contact",
+      "anchor": "physical_helper_36",
+      "body": "right_shoulder",
+      "half_size": [
+        0.014277442824095488,
+        0.019092625007033348,
+        0.02767095435410738
+      ],
+      "position": [
+        -9.375484660267942e-05,
+        -0.0011617876589298276,
+        -0.0014138510450720802
+      ],
+      "quaternion": [
+        1.0000000000000002,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_37__contact",
+      "anchor": "physical_helper_37",
+      "body": "right_shoulder",
+      "half_size": [
+        0.023066088557243347,
+        0.03532704059034586,
+        0.04910299368202686
+      ],
+      "position": [
+        0.00026371143758297135,
+        -0.006267788819968731,
+        0.0007422212511301088
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_38__contact",
+      "anchor": "physical_helper_38",
+      "body": "right_upper_arm",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677239800087e-09,
+        0.00017932057380676226,
+        -0.0010745031759142939
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_39__contact",
+      "anchor": "physical_helper_39",
+      "body": "right_upper_arm",
+      "half_size": [
+        0.01326835947111249,
+        0.033719442784786224,
+        0.07122589275240898
+      ],
+      "position": [
+        0.0009455620311200683,
+        -0.0019005499780178207,
+        0.0017992220818996564
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_40__contact",
+      "anchor": "physical_helper_40",
+      "body": "right_lower_arm",
+      "half_size": [
+        0.013526722323149443,
+        0.032755629159510136,
+        0.06634929776191711
+      ],
+      "position": [
+        -0.0008548791520297583,
+        -0.0038404492661357164,
+        -0.0010699555277824447
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_41__contact",
+      "anchor": "physical_helper_41",
+      "body": "right_lower_arm",
+      "half_size": [
+        0.014275015331804752,
+        0.01854533888399601,
+        0.028256251476705074
+      ],
+      "position": [
+        -8.770357817410919e-05,
+        -0.0005779098719358451,
+        -0.0018142359331250204
+      ],
+      "quaternion": [
+        1.0000000000000002,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_42__contact",
+      "anchor": "physical_helper_42",
+      "body": "right_lower_arm",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677236649637e-09,
+        0.00017932057380676356,
+        -0.001074503175914297
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_43__contact",
+      "anchor": "physical_helper_43",
+      "body": "right_wrist",
+      "half_size": [
+        0.012400000356137753,
+        0.020748230628669262,
+        0.02521883323788643
+      ],
+      "position": [
+        1.862645149230966e-09,
+        -0.0011876532807946246,
+        -0.00012547336518764404
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_44__contact",
+      "anchor": "physical_helper_44",
+      "body": "right_wrist",
+      "half_size": [
+        0.01798929926007986,
+        0.03579448349773884,
+        0.047373900189995766
+      ],
+      "position": [
+        -0.0016506155952811298,
+        -0.005804041400551817,
+        0.0022441018372774215
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_45__contact",
+      "anchor": "physical_helper_45",
+      "body": "right_gripper",
+      "half_size": [
+        0.012400000356137753,
+        0.019649475812911987,
+        0.02305841725319624
+      ],
+      "position": [
+        2.7939677223063175e-09,
+        0.00017932057380676362,
+        -0.0010745031759142928
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_46__contact",
+      "anchor": "physical_helper_46",
+      "body": "right_gripper",
+      "half_size": [
+        0.008095566183328629,
+        0.007603902835398912,
+        0.015127211809158325
+      ],
+      "position": [
+        0.003002371371702124,
+        -0.01536564047053217,
+        0.05861992429809197
+      ],
+      "quaternion": [
+        -0.11789533026359532,
+        0.7433230442040427,
+        -0.6442246228033507,
+        -0.1361843545755339
+      ],
+      "role": "finger",
+      "contype": 4,
+      "conaffinity": 3
+    },
+    {
+      "name": "physical_helper_47__contact",
+      "anchor": "physical_helper_47",
+      "body": "right_moving_jaw_so101_v1",
+      "half_size": [
+        0.008281443268060684,
+        0.01599322445690632,
+        0.007651904132217169
+      ],
+      "position": [
+        0.000496479572987866,
+        -0.00035984734252900483,
+        0.04129702864707532
+      ],
+      "quaternion": [
+        0.7071223450596419,
+        -0.7060915311066372,
+        0.026435763993451614,
+        0.026718705038262416
+      ],
+      "role": "finger",
+      "contype": 4,
+      "conaffinity": 3
+    },
+    {
+      "name": "physical_helper_48__contact",
+      "anchor": "physical_helper_48",
+      "body": "right_camera_rig",
+      "half_size": [
+        0.016179446130990982,
+        0.020245318301022053,
+        0.03548888675868511
+      ],
+      "position": [
+        -0.0005040206015110054,
+        0.00013867672532796838,
+        -0.0005293395370245018
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "physical_helper_49__contact",
+      "anchor": "physical_helper_49",
+      "body": "right_camera_module",
+      "half_size": [
+        0.02168209757655859,
+        0.021441617980599403,
+        0.018440821208059788
+      ],
+      "position": [
+        0.00015241745859384529,
+        -0.001968178898096085,
+        0.00230803992599249
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "robot",
+      "contype": 8,
+      "conaffinity": 1
+    },
+    {
+      "name": "base_servo_printed_0__contact",
+      "anchor": "base_servo_printed_0",
+      "body": "base_servo",
+      "half_size": [
+        0.04206940159201622,
+        0.05586101673543453,
+        0.05546842701733112
+      ],
+      "position": [
+        0.005949676036834759,
+        -0.003947628661990195,
+        1.339800655841845e-05
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_1_case__contact",
+      "anchor": "servo_1_case",
+      "body": "base_servo",
+      "half_size": [
+        0.01256215339526534,
+        0.019570917822420597,
+        0.0238526351749897
+      ],
+      "position": [
+        0.00011155987158417742,
+        -0.0008811866864562097,
+        0.0017141774296760613
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_1_horns__contact",
+      "anchor": "servo_1_horns",
+      "body": "target_servo_1_pivot",
+      "half_size": [
+        0.009599055163562298,
+        0.009599949233233929,
+        0.018625034019351006
+      ],
+      "position": [
+        9.043142199516341e-07,
+        -1.8626451495815625e-09,
+        -0.00014713034033775517
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "base_side_cover_printed_0__contact",
+      "anchor": "base_side_cover_printed_0",
+      "body": "base_side_cover",
+      "half_size": [
+        0.017100555822253227,
+        0.023800226859748363,
+        0.04145600460469723
+      ],
+      "position": [
+        0.0009242799133062423,
+        -0.0013959454372525295,
+        0.006463518366217649
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "shoulder_connector_printed_0__contact",
+      "anchor": "shoulder_connector_printed_0",
+      "body": "shoulder_connector",
+      "half_size": [
+        0.0230631148442626,
+        0.03531104605644941,
+        0.04908040538430214
+      ],
+      "position": [
+        0.00025632884353399277,
+        0.006341245956718922,
+        -0.0007281377911567725
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "shoulder_connector_printed_1__contact",
+      "anchor": "shoulder_connector_printed_1",
+      "body": "shoulder_connector",
+      "half_size": [
+        0.01428027544170618,
+        0.019094861112535,
+        0.027672390453517437
+      ],
+      "position": [
+        9.353831410408359e-05,
+        -0.001154526136815557,
+        0.0014122677966952443
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "upper_arm_module_printed_0__contact",
+      "anchor": "upper_arm_module_printed_0",
+      "body": "upper_arm_module",
+      "half_size": [
+        0.013260301668196917,
+        0.033720724284648895,
+        0.07122672349214554
+      ],
+      "position": [
+        0.0009404611773788947,
+        -0.0019007436931133394,
+        0.0018455237150192371
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_2_horns__contact",
+      "anchor": "servo_2_horns",
+      "body": "upper_arm_module",
+      "half_size": [
+        0.009599525481462479,
+        0.00959958415478468,
+        0.01862503495067358
+      ],
+      "position": [
+        6.891787051929957e-08,
+        -3.725290303060753e-09,
+        0.0001471294090151795
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_2_case__contact",
+      "anchor": "servo_2_case",
+      "body": "target_servo_2_pivot",
+      "half_size": [
+        0.012562152929604053,
+        0.01957092620432377,
+        0.02385263890028
+      ],
+      "position": [
+        0.0001115594059228894,
+        -0.0008811857551336313,
+        0.0017141774296760596
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "forearm_module_printed_0__contact",
+      "anchor": "forearm_module_printed_0",
+      "body": "forearm_module",
+      "half_size": [
+        0.013527755625545979,
+        0.03275697026401758,
+        0.06635385379195213
+      ],
+      "position": [
+        0.0008532907813787523,
+        -0.0038419542834162925,
+        0.0010671056807041212
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "forearm_module_printed_1__contact",
+      "anchor": "forearm_module_printed_1",
+      "body": "forearm_module",
+      "half_size": [
+        0.014275087509304285,
+        0.01854529045522213,
+        0.028256316669285297
+      ],
+      "position": [
+        -8.772267028689287e-05,
+        0.0005777869373559952,
+        0.0018145432695746526
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_3_horns__contact",
+      "anchor": "servo_3_horns",
+      "body": "forearm_module",
+      "half_size": [
+        0.009599527344107628,
+        0.009599582757800817,
+        0.01862503308802843
+      ],
+      "position": [
+        6.332993507624284e-08,
+        2.3283064345897438e-09,
+        0.00014712940901517928
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_4_case__contact",
+      "anchor": "servo_4_case",
+      "body": "forearm_module",
+      "half_size": [
+        0.01256215525791049,
+        0.01957092061638832,
+        0.02385263890028
+      ],
+      "position": [
+        0.00011156266555190341,
+        -0.0008811783045530359,
+        0.0017141792923212142
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_3_case__contact",
+      "anchor": "servo_3_case",
+      "body": "target_servo_3_pivot",
+      "half_size": [
+        0.012562152463942766,
+        0.019570921547710896,
+        0.02385263890028
+      ],
+      "position": [
+        0.0001115608029067461,
+        -0.0008811829611659067,
+        0.0017141830176115088
+      ],
+      "quaternion": [
+        1.0000000000000009,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "servo_4_horns__contact",
+      "anchor": "servo_4_horns",
+      "body": "target_servo_4_pivot",
+      "half_size": [
+        0.009599578566849232,
+        0.00959952874109149,
+        0.01862503308802843
+      ],
+      "position": [
+        9.313225756509705e-10,
+        5.634501576444801e-08,
+        0.00014713127166032824
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    },
+    {
+      "name": "pin__contact",
+      "anchor": "pin",
+      "body": "assembly_pin",
+      "half_size": [
+        0.006000000052154064,
+        0.006000000052154064,
+        0.021000000182539225
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.006621228065341713
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "role": "part",
+      "contype": 2,
+      "conaffinity": 5
+    }
+  ],
+  "source_model_sha256": "63818605a89711a697bb0bd3e9bcf2706ac6e8f8678bf91bf31e2a9509085837"
+}

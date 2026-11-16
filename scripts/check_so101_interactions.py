@@ -76,10 +76,6 @@ def fixed_palm(shape="box", width=0.012, part=None):
     }
     ext = root.find("extension")
     for plugin in list(ext):
-        if plugin.get("plugin") == "so101.contact_driver":
-            if part != "driver":
-                ext.remove(plugin)
-            continue
         for instance in list(plugin):
             if instance.get("name") not in instances:
                 plugin.remove(instance)
@@ -287,11 +283,7 @@ def grasp_case(
     rotation = np.eye(3)
     offset = np.zeros(3)
     if part:
-        bounds = (
-            np.array(scene.metadata()[part]["bounds"])
-            if part != "driver"
-            else np.array([[-0.014, -0.015, -0.078], [0.014, 0.018, 0.105]])
-        )
+        bounds = np.array(scene.metadata()[part]["bounds"])
         if part == "screw":
             # The nominal M3 supplement differs from the incomplete source CAD.
             d.qpos[q : q + 7] = [0, 0, 0, 1, 0, 0, 0]
@@ -307,12 +299,6 @@ def grasp_case(
             bounds = np.array([points.min(0), points.max(0)])
         if part == "base":
             offset = [bounds[0, 0], 0, 0.03]  # outside face of the thin side wall
-        elif part == "driver":
-            from assembly_policy.so101.tool import GRASP_CENTER, PUBLISHED_DIMENSIONS_M
-
-            rotation = Rotation.from_quat([-0.5, -0.5, -0.5, 0.5]).as_matrix()
-            offset = GRASP_CENTER
-            width = PUBLISHED_DIMENSIONS_M[2]
         else:
             axis = int(np.argmin(np.ptp(bounds, axis=0)))
             rotation = (
@@ -445,16 +431,14 @@ def grasp_case(
             and material is not None
             and material < material_limit
         ),
-        scope="Aligned fixed-palm mechanics; sampled geometry check, not continuous collision or tabletop pickup. Driver geometry qualification unavailable."
-        if material is None
-        else "Aligned fixed-palm mechanics; sampled geometry check, not continuous collision or tabletop pickup.",
+        scope="Aligned fixed-palm mechanics; sampled geometry check, not continuous collision or tabletop pickup.",
     )
 
 
 def table_cases():
     m = scene.model(contact_monitor=True)
     rows = []
-    for name in (*scene.PARTS, "driver"):
+    for name in scene.PARTS:
         for height in (0.02, 0.06):
             d = mujoco.MjData(m)
             home(m, d)
@@ -685,7 +669,7 @@ def main():
             save(grasp_case(shape, width, -0.100, 0.7, dt=0.00025))
             save(grasp_case(shape, width, -0.100, 0.7, closed=-0.1))
     if "parts" in sections:
-        for part, depth in itertools.product((*scene.PARTS, "driver"), (-0.100, -0.085)):
+        for part, depth in itertools.product(scene.PARTS, (-0.100, -0.085)):
             save(grasp_case("box", 0.006, depth, None, part=part))
             gc.collect()
     if "table" in sections:

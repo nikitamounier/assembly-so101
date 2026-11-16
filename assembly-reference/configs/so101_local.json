@@ -1,0 +1,23 @@
+{
+  "suite": "so101",
+  "tasks": "all",
+  "physics": "native",
+  "device": "cuda",
+  "envs": 8,
+  "steps": 32,
+  "threads": 8,
+  "iterations": 20,
+  "max_hours": 2.0,
+  "save_every": 1,
+  "contact_depth_m": 0.0005,
+  "stability": "pose",
+  "safety_penalty": 1.0,
+  "sampler_floor_mass": 1.6,
+  "seed": 20261107,
+  "allow_task_mechanics_failure": false,
+  "review_seconds": 7200,
+  "evaluation_timeout_seconds": 1800,
+  "evaluation_trials_per_family": 1,
+  "min_disk_gib": 2.0,
+  "min_available_memory_gib": 2.0
+}

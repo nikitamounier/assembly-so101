@@ -12,16 +12,18 @@ from pathlib import Path
 import numpy as np
 
 from ..rl.transport import TLSListener, connect
+from ..so101.env import PROPRIO_DIM
+from ..so101.scene import OBS_BODIES
 
 
 def payload(envs):
     return dict(
-        frame=np.zeros((envs, 53), np.float32),
+        frame=np.zeros((envs, PROPRIO_DIM), np.float32),
         task=np.zeros(envs, np.int64),
-        tcp_p=np.zeros((envs, 2, 3), np.float32),
-        tcp_R=np.zeros((envs, 2, 3, 3), np.float32),
-        part_p=np.zeros((envs, 11, 3), np.float32),
-        part_q=np.zeros((envs, 11, 4), np.float32),
+        tcp_p=np.zeros((envs, 4, 3), np.float32),
+        tcp_R=np.zeros((envs, 4, 3, 3), np.float32),
+        part_p=np.zeros((envs, len(OBS_BODIES), 3), np.float32),
+        part_q=np.zeros((envs, len(OBS_BODIES), 4), np.float32),
         finger=np.zeros((envs, 2), np.float32),
         reward=np.zeros(envs, np.float32),
         done=np.zeros(envs, bool),

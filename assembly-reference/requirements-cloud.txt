@@ -1,0 +1,16 @@
+# Qualified installed runtime, Python 3.12 / Linux x86-64.
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.11.0+cu128
+mujoco==3.17.0
+numpy==2.5.4
+scipy==1.18.1
+imageio==2.38.1
+imageio-ffmpeg==0.8.1
+pillow==13.0.0
+matplotlib==3.11.2
+psutil==7.2.2
+trimesh==5.2.0
+libigl==2.6.3
+
+# Reproducible vendor arm-link asset preparation.
+rhino3dm==8.35.0

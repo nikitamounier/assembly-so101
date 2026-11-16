@@ -1,6 +1,6 @@
 """Task adapter for AssembleNIST's unchanged PPO/SimBa/SGS implementation.
 
-All six target parts and the contact-operated tool remain dynamic. Screw mating
+All six target parts remain dynamic. Screw mating
 uses the documented nominal helical supplement in fastener.py.
 """
 
@@ -17,7 +17,7 @@ from .goals import placement_errors
 from .scene import ASSEMBLY_TASKS, ASSETS, OBS_BODIES, PARTS, metadata, model
 
 HISTORY = 5
-PROPRIO_DIM = 53  # two TCP poses/twists (26), joints (12), actions (12), tool state (3)
+PROPRIO_DIM = 50  # two TCP poses/twists (26), joints (12), previous actions (12)
 ACT_DIM = 12
 ARM_ACTIONS = np.array([0, 1, 2, 3, 4, 6, 7, 8, 9, 10])
 PREVIOUS_ACTION_START = 38
@@ -91,7 +91,7 @@ class BatchedAssemblyEnv:
         self.t = np.zeros(self.N, np.int64)
         self.horizon = round(self.ecfg.horizon_s / self.ecfg.control_dt)
         self.substeps = round(self.ecfg.control_dt / self.m.opt.timestep)
-        self.names = (*PARTS, "driver")
+        self.names = PARTS
         self.part_q = [self.m.jnt_qposadr[self.m.joint(n + "_free").id] for n in self.names]
         self.part_v = [self.m.jnt_dofadr[self.m.joint(n + "_free").id] for n in self.names]
         self.meta = metadata()
@@ -153,13 +153,6 @@ class BatchedAssemblyEnv:
                     br.append(d.body(b).xmat.reshape(3, 3).copy())
             row.extend(d.qpos[:12])
             row.extend(self.prev_action[i])
-            row.extend(
-                [
-                    d.joint("button_forward").qpos[0],
-                    d.joint("button_reverse").qpos[0],
-                    d.joint("spindle").qvel[0],
-                ]
-            )
             prop.append(row)
             points_p.append(bp)
             points_R.append(br)
@@ -224,8 +217,7 @@ class BatchedAssemblyEnv:
             self.m.actuator_ctrlrange[ARM_ACTIONS, 0],
             self.m.actuator_ctrlrange[ARM_ACTIONS, 1],
         )
-        # Real SO101 aperture control supports retaining a driver while changing
-        # squeeze/trigger travel. There is no independent tool activation action.
+        # Relative aperture control for each SO101 gripper.
         ctrl[:, [5, 11]] = np.clip(
             self.state[:, [6, 12]] + self.ecfg.gripper_scale * a[:, [5, 11]],
             self.m.actuator_ctrlrange[[5, 11], 0],
@@ -278,10 +270,7 @@ class BatchedAssemblyEnv:
             held = any(
                 active_id in self.m.geom_bodyid[c.geom]
                 and any(
-                    (
-                        self.m.body(int(b)).name.startswith(("left_", "right_", "driver_"))
-                        or self.m.body(int(b)).name == "driver"
-                    )
+                    self.m.body(int(b)).name.startswith(("left_", "right_"))
                     for b in self.m.geom_bodyid[c.geom]
                 )
                 for c in d.contact

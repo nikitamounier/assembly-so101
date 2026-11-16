@@ -8,16 +8,17 @@ from zipfile import BadZipFile
 
 import numpy as np
 
-from assembly_policy.so101.env import TASK_NAMES
-
+TASK_NAMES = ("motor", "horn", "screw", "retainer", "yoke")
 FAMILIES = ("Loose", "Pickup", "In hand", "Partial", "Near insertion")
 
 
 class ResetCatalog:
-    def __init__(self, roots, model_signature, state_size):
+    def __init__(self, roots, model_signature, state_size, *, state_spec=None):
         self.banks = []
         self.entries = []
         self.sources = {}
+        self.qualifications = {}
+        self.variations = {}
         self._cache = OrderedDict()
         seen = set()
         for root in roots:
@@ -28,18 +29,30 @@ class ResetCatalog:
                 else sorted(root.rglob("manifest.json"))
             )
             for path in manifests:
+                if any(part.endswith((".building", ".publishing")) for part in path.parts):
+                    continue
                 if path in seen:
                     continue
                 seen.add(path)
-                self._read(path, model_signature, state_size)
+                self._read(path, model_signature, state_size, state_spec)
         self.by_id = {entry["id"]: entry for entry in self.entries}
+        preferred = [
+            bank for bank in self.banks if bank.get("default") and bank["compatible"] and bank["count"]
+        ]
+        self.default_bank = preferred[-1]["id"] if preferred else None
 
-    def _read(self, path, signature, state_size):
+    def _read(self, path, signature, state_size, state_spec):
         try:
             manifest = json.loads(path.read_text())
         except (ValueError, OSError):
             return
         if not isinstance(manifest, dict) or "model_signature" not in manifest:
+            return
+        task_names = manifest.get("task_names", TASK_NAMES)
+        family_names = manifest.get("family_names", FAMILIES)
+        if not isinstance(task_names, (list, tuple)) or not all(isinstance(t, str) for t in task_names):
+            return
+        if not isinstance(family_names, (list, tuple)) or not all(isinstance(f, str) for f in family_names):
             return
         directory = path.parent
         bank_id = hashlib.sha256(str(directory).encode()).hexdigest()[:12]
@@ -52,14 +65,46 @@ class ResetCatalog:
         )
         self.banks.append(bank)
         bank["distribution"] = manifest.get("reset_distribution", "prepared")
+        staged = bank["distribution"].startswith("subtask")
+        all_loose = bank["distribution"] == "all_loose"
+        bank["label"] = manifest.get(
+            "display_name", "All parts loose · full sequence" if all_loose else directory.name
+        )
+        bank["default"] = bool(manifest.get("default_viewer_collection", False))
+        bank["task_names"] = list(task_names)
+        bank["family_names"] = list(family_names)
+        bank["progress"] = manifest.get("progress")
         if not bank["compatible"]:
             bank["errors"].append("Model signature differs from the current workcell")
             return
+        if state_spec is not None and "state_spec" in manifest:
+            import mujoco
+
+            saved_spec = manifest["state_spec"]
+            if isinstance(saved_spec, str):
+                saved_spec = getattr(mujoco.mjtState, saved_spec, None)
+            if saved_spec != int(state_spec):
+                bank["compatible"] = False
+                bank["errors"].append("Saved state specification differs from the current scene")
+                return
+        qualifications = {}
+        qualification_path = directory / "qualification.json"
+        if qualification_path.is_file():
+            try:
+                receipts = json.loads(qualification_path.read_text())
+                if isinstance(receipts, list):
+                    qualifications = {
+                        (receipt["split"], receipt["row"]): receipt
+                        for receipt in receipts
+                        if isinstance(receipt, dict) and "split" in receipt and "row" in receipt
+                    }
+            except (ValueError, OSError, TypeError):
+                bank["errors"].append("Could not read reset qualification metadata")
         for archive in sorted(directory.rglob("*.npz")):
             if archive.is_symlink():
                 continue
             stem = archive.stem
-            if not any(stem == f"{task}_{split}" for task in TASK_NAMES for split in ("train", "eval")):
+            if not any(stem == f"{task}_{split}" for task in task_names for split in ("train", "eval")):
                 continue
             task, split = stem.rsplit("_", 1)
             try:
@@ -76,19 +121,44 @@ class ResetCatalog:
                     self.sources[source_id] = archive
                     for row in range(len(states)):
                         family = int(families[row])
+                        entry_id = f"{source_id}-{row}"
+                        variations = manifest.get("variation_by_task", {}).get(task, {}).get(split, [])
+                        variation = variations[row] if isinstance(variations, list) and row < len(variations) else None
+                        if variation is not None and not isinstance(variation, dict):
+                            raise ValueError("Invalid per-row variation metadata")
+                        summary = None
+                        if variation is not None:
+                            self.variations[entry_id] = variation
+                            summary = {
+                                key: variation[key]
+                                for key in ("kind", "difficulty", "friction_multipliers", "connector_swivel_degrees",
+                                            "training_eligible", "candidate_rejected", "rejected", "rejection_reasons", "qualification")
+                                if key in variation
+                            }
+                        if (split, row) in qualifications:
+                            self.qualifications[entry_id] = qualifications[split, row]
                         self.entries.append(
                             dict(
-                                id=f"{source_id}-{row}",
+                                id=entry_id,
                                 bank=bank_id,
                                 task=task,
+                                focus=manifest.get("focus_by_task", {}).get(task),
+                                stage=manifest.get("stage_by_task", {}).get(task),
+                                variation=summary,
+                                review_kind=(variation or {}).get("kind", "nominal" if bank["distribution"] == "photo_review" else "variation"),
                                 split=split,
                                 family=family,
-                                family_name=FAMILIES[family]
-                                if 0 <= family < len(FAMILIES)
+                                family_name=family_names[family]
+                                if 0 <= family < len(family_names)
                                 else f"Family {family}",
                                 seed=int(seeds[row]),
                                 row=row,
                                 collection=relative.removesuffix(".npz"),
+                                distribution=bank["distribution"],
+                                setup="Prerequisites assembled"
+                                if staged
+                                else ("All parts loose" if all_loose else None),
+                                predecessors=list(task_names[: task_names.index(task)]) if staged else [],
                             )
                         )
                     bank["count"] += len(states)

@@ -44,14 +44,21 @@ def parse(argv=None):
     ap.add_argument(
         "--init-policy", help="SO101 weights-only continuation into a fresh run; optimizer and SGS restart"
     )
-    ap.add_argument("--suite", choices=["so101"], default="so101")
+    ap.add_argument("--suite", choices=["wowrobo", "so101"], default="wowrobo")
+    ap.add_argument(
+        "--wowrobo-debug-resets",
+        action="store_true",
+        help="Diagnostic only: explicitly use unqualified current resets; never mark as production training",
+    )
+    ap.add_argument("--wowrobo-control-dt", type=float, default=0.04)
+    ap.add_argument("--wowrobo-horizon", type=float, default=15.0)
     ap.add_argument("--so101-max-contact-depth", type=float, default=None)
     ap.add_argument("--so101-stability", choices=["velocity", "pose"], default="pose")
     ap.add_argument("--so101-safety-penalty", type=float, default=0.0)
     ap.add_argument("--so101-physics", choices=["native"], default="native")
 
     ap.add_argument("--tasks", default="all", help="all (default), or a '+'-separated list")
-    ap.add_argument("--bank-dir", default=str(BANK_DIR))
+    ap.add_argument("--bank-dir", default=None)
     ap.add_argument("--envs", type=int, default=8192)
     ap.add_argument("--iters", type=int, default=10000)
     # PPO
@@ -160,15 +167,32 @@ class Trainer:
         self.a = a
         if min(a.envs, a.steps, a.epochs, a.minibatches, a.nthread, a.save_every) < 1:
             raise ValueError("Environment, rollout, optimizer and save budgets must be positive")
-        from .so101 import env as backend
-        from .so101.resets import check_bank
+        current = a.suite == "wowrobo"
+        if current:
+            from functools import partial
 
+            from .wowrobo import env as backend
+            from .wowrobo.bank import check_bank
+            from .wowrobo.obs import PointTables as CurrentPointTables
+            from .wowrobo.runtime import DEFAULT_BANK
+
+            a.bank_dir = a.bank_dir or str(DEFAULT_BANK)
+            bank_meta = check_bank(a.bank_dir, allow_debug=a.wowrobo_debug_resets)
+            point_tables = partial(CurrentPointTables, review_model=bank_meta["review_model"])
+            if a.init_policy:
+                raise ValueError("Current assembly requires a fresh policy; legacy weights are incompatible")
+        else:
+            from .so101 import env as backend
+            from .so101.resets import check_bank
+
+            a.bank_dir = a.bank_dir or str(BANK_DIR)
+            check_bank(a.bank_dir)
+            point_tables = PointTables
         self.backend = backend
-        point_tables, config_type, scales = PointTables, backend.EnvConfig, backend.parse_scales
+        config_type, scales = backend.EnvConfig, backend.parse_scales
         resolve = backend.resolve_tasks
         self.proprio_dim, self.act_dim = backend.PROPRIO_DIM, backend.ACT_DIM
         self.arm_actions, self.prev_start = backend.ARM_ACTIONS, backend.PREVIOUS_ACTION_START
-        check_bank(a.bank_dir)
         self.dev = torch.device(a.device)
         if a.n_fix is None:
             a.n_fix = 256 if self.backend else 128
@@ -201,6 +225,14 @@ class Trainer:
                 safety_penalty=a.so101_safety_penalty,
             )
         )
+        if current:
+            extra.update(
+                profile_path=bank_meta["profile_path"],
+                review_model=bank_meta["review_model"],
+                control_dt=a.wowrobo_control_dt,
+                horizon_s=a.wowrobo_horizon,
+                max_contact_depth=a.so101_max_contact_depth or 0.0005,
+            )
         self.ecfg = config_type(
             nthread=a.nthread,
             cost_coef=a.cost_coef,
@@ -213,7 +245,25 @@ class Trainer:
         if self.backend:
             self.args["observation_signature"] = self.pts.signature
         env_type = None if self.backend is None else self.backend.BatchedAssemblyEnv
-        if self.backend:
+        if current:
+            from .so101.resets import pooled_signature
+            from .wowrobo.bank import directory_signature
+
+            self.args["model_signature"] = bank_meta["model_signature"]
+            self.args["bank_signature"] = pooled_signature((self.bank_S, self.bank_T, self.bank_F))
+            self.args["bank_directory_signature"] = directory_signature(a.bank_dir)
+            self.args["physics_backend"] = "wowrobo-native-source-sdf"
+            self.args["physics_signature"] = self.args["model_signature"]
+            reward_root = Path(__file__).parent
+            self.args["reward_signature"] = hashlib.sha256(
+                (reward_root / "so101/wowrobo_reward.py").read_bytes()
+                + (reward_root.parent / "configs/wowrobo_reward_regions.json").read_bytes()
+                + (reward_root / "wowrobo/env.py").read_bytes()
+            ).hexdigest()
+            self.args["run_status"] = (
+                "DIAGNOSTIC_UNQUALIFIED_RESETS" if a.wowrobo_debug_resets else "CURRENT_ASSEMBLY_TRAINING"
+            )
+        elif self.backend:
             from .so101.resets import directory_signature, pooled_signature, signature
 
             self.args["model_signature"] = signature()
@@ -312,7 +362,9 @@ class Trainer:
                 [
                     sys.executable,
                     "-m",
-                    "assembly_policy.so101.evaluate",
+                    "assembly_policy.wowrobo.evaluate"
+                    if self.a.suite == "wowrobo"
+                    else "assembly_policy.so101.evaluate",
                     "--policy",
                     str(ck),
                     "--tasks",
@@ -367,14 +419,17 @@ class Trainer:
             return
         d = torch.load(p, map_location=self.dev, weights_only=False)
         if self.backend:
-            from .so101.obs import require_observation_signature
-
+            if self.a.suite == "wowrobo":
+                from .wowrobo.obs import require_observation_signature
+            else:
+                from .so101.obs import require_observation_signature
             require_observation_signature(d.get("args", {}), self.pts)
         if self.backend and (
             d.get("args", {}).get("model_signature") != self.args["model_signature"]
             or d.get("args", {}).get("bank_signature") != self.args["bank_signature"]
             or d.get("args", {}).get("bank_directory_signature") != self.args.get("bank_directory_signature")
             or d.get("args", {}).get("observation_signature") != self.args["observation_signature"]
+            or d.get("args", {}).get("reward_signature") != self.args.get("reward_signature")
             or d["args"].get("physics_backend", "native") != self.args["physics_backend"]
             or d["args"].get("physics_signature", d["args"]["model_signature"])
             != self.args["physics_signature"]
@@ -388,8 +443,9 @@ class Trainer:
         self.opt.load_state_dict(d["opt"])
         self.model.project_()
         self.lr, self.it, self.transitions = d["lr"], d["it"], d["transitions"]
-        if "parent_policy" in d.get("args", {}):
-            self.args["parent_policy"] = d["args"]["parent_policy"]
+        for provenance in ("parent_policy", "parent_checkpoint"):
+            if provenance in d.get("args", {}):
+                self.args[provenance] = d["args"][provenance]
         sp = self.run / "sampler.pt"
         st = d.get("sampler")
         if st is None and sp.exists():

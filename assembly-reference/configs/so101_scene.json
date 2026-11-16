@@ -1,0 +1,863 @@
+{
+  "source": "Shared training/Quest workcell with corrected Hiwonder mating and the bare HOTO S-A01",
+  "mounts": {
+    "left": {
+      "position": [
+        -0.011,
+        0.35,
+        0.0024
+      ],
+      "quaternion": [
+        0.7071067811865476,
+        0.0,
+        0.0,
+        -0.7071067811865476
+      ]
+    },
+    "right": {
+      "position": [
+        0.0,
+        -0.2,
+        0.0024
+      ],
+      "quaternion": [
+        0.7071067811865476,
+        0.0,
+        0.0,
+        0.7071067811865476
+      ]
+    }
+  },
+  "initial_joints": {
+    "left_shoulder_pan": [
+      0.0
+    ],
+    "left_shoulder_lift": [
+      -0.7
+    ],
+    "left_elbow_flex": [
+      -0.5
+    ],
+    "left_wrist_flex": [
+      0.3
+    ],
+    "left_wrist_roll": [
+      0.0
+    ],
+    "left_gripper": [
+      0.65
+    ],
+    "right_shoulder_pan": [
+      0.0
+    ],
+    "right_shoulder_lift": [
+      -0.7
+    ],
+    "right_elbow_flex": [
+      -0.5
+    ],
+    "right_wrist_flex": [
+      0.3
+    ],
+    "right_wrist_roll": [
+      0.0
+    ],
+    "right_gripper": [
+      0.65
+    ],
+    "base_free": [
+      -0.0055,
+      0.115,
+      0.04550006675720215,
+      0.7071067811865476,
+      -0.7071067811865476,
+      0,
+      0
+    ],
+    "motor_free": [
+      -0.0055,
+      0.035,
+      0.024614523887634274,
+      0.7071067811865476,
+      -0.7071067811865476,
+      0,
+      0
+    ],
+    "horn_free": [
+      -0.0905,
+      0.125,
+      0.004250009536743168,
+      1,
+      0,
+      0,
+      0
+    ],
+    "screw_free": [
+      -0.1055,
+      0.055,
+      0.004,
+      0.7071067811865476,
+      0.0,
+      0.7071067811865476,
+      0.0
+    ],
+    "retainer_free": [
+      0.0945,
+      0.155,
+      0.017699998855590822,
+      1,
+      0,
+      0,
+      0
+    ],
+    "yoke_free": [
+      0.0795,
+      0.045,
+      0.04409999847412109,
+      1,
+      0,
+      0,
+      0
+    ],
+    "driver_free": [
+      -0.1405,
+      0.135,
+      0.01185,
+      0.5,
+      0.5,
+      0.5,
+      -0.5
+    ],
+    "button_forward": [
+      0.0
+    ],
+    "button_reverse": [
+      0.0
+    ],
+    "trigger_saddle": [
+      0.0
+    ],
+    "spindle": [
+      0.0
+    ]
+  },
+  "effort_caps": {
+    "arm": 2.94,
+    "gripper": 1.0
+  },
+  "main_camera": {
+    "position": [
+      -0.55,
+      0.075,
+      0.32
+    ],
+    "look_at": [
+      0,
+      0.075,
+      0.28
+    ],
+    "fovy_degrees": 70,
+    "aspect": 1.7777777777777777
+  },
+  "assembly_plan": {
+    "assembled_base_position": [
+      -0.0055,
+      0.115,
+      0.04380006675720215
+    ],
+    "removal_order": [
+      "yoke",
+      "retainer",
+      "screw",
+      "horn",
+      "motor"
+    ],
+    "extractions": {
+      "yoke": [
+        -0.0023551180309324725,
+        -0.04493832906395582,
+        0.0
+      ],
+      "retainer": [
+        0,
+        0,
+        0.055
+      ],
+      "screw": [
+        0,
+        0,
+        0.007
+      ],
+      "horn": [
+        0,
+        0,
+        0.012
+      ],
+      "motor": [
+        0,
+        -0.075,
+        0
+      ]
+    },
+    "screw_pitch_m": 0.0005,
+    "scope": "Geometric path and stable initial poses; no executed robot or learned assembly claim",
+    "extractions_frame": "base",
+    "motor_insertion_axis_base": [
+      0,
+      1,
+      0
+    ],
+    "motor_insertion_axis_world": [
+      0,
+      0,
+      -1
+    ]
+  },
+  "profile": "shared-side-v14-horn-support",
+  "bank_directory": "data/so101/banks_shared_v14",
+  "contact_search": {
+    "initpoints": 4,
+    "iterations": 10
+  },
+  "contact_pairs": [
+    {
+      "name": "motor_base_volume",
+      "geom1": "base_contact",
+      "geom2": "motor_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0004,
+        0.8,
+        2
+      ],
+      "margin": 5e-05
+    },
+    {
+      "name": "driver_table_tail",
+      "geom1": "table",
+      "geom2": "driver_case_tail",
+      "condim": 6,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ]
+    },
+    {
+      "name": "driver_table_control",
+      "geom1": "table",
+      "geom2": "driver_case_control",
+      "condim": 6,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ]
+    },
+    {
+      "name": "driver_table_front",
+      "geom1": "table",
+      "geom2": "driver_case_front",
+      "condim": 6,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ]
+    },
+    {
+      "name": "retainer_base_seating",
+      "geom1": "base_contact",
+      "geom2": "retainer_base_surface",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        0.0001
+      ]
+    },
+    {
+      "name": "motor_horn_mating",
+      "geom1": "motor_contact",
+      "geom2": "horn_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ]
+    },
+    {
+      "name": "yoke_motor_mating",
+      "geom1": "motor_contact",
+      "geom2": "yoke_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "yoke_horn_mating",
+      "geom1": "horn_contact",
+      "geom2": "yoke_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "motor_horn_bearing_0",
+      "geom1": "motor_contact",
+      "geom2": "horn_bearing_0",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.0006,
+        0.0003,
+        0.0003
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        0.0001
+      ]
+    },
+    {
+      "name": "motor_horn_bearing_1",
+      "geom1": "motor_contact",
+      "geom2": "horn_bearing_1",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.0006,
+        0.0003,
+        0.0003
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        0.0001
+      ]
+    },
+    {
+      "name": "motor_horn_bearing_2",
+      "geom1": "motor_contact",
+      "geom2": "horn_bearing_2",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.0006,
+        0.0003,
+        0.0003
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        0.0001
+      ]
+    },
+    {
+      "name": "motor_horn_bearing_3",
+      "geom1": "motor_contact",
+      "geom2": "horn_bearing_3",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.0006,
+        0.0003,
+        0.0003
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.99,
+        0.999,
+        0.0001
+      ]
+    },
+    {
+      "name": "base_rail_1_0_motor",
+      "geom1": "base_rail_1_0",
+      "geom2": "motor_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "base_rail_1_1_motor",
+      "geom1": "base_rail_1_1",
+      "geom2": "motor_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "base_rail_-1_0_motor",
+      "geom1": "base_rail_-1_0",
+      "geom2": "motor_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "base_rail_-1_1_motor",
+      "geom1": "base_rail_-1_1",
+      "geom2": "motor_contact",
+      "condim": 3,
+      "friction": [
+        0.3,
+        0.3,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.1,
+        0.99,
+        0.0002,
+        0.8,
+        2
+      ]
+    },
+    {
+      "name": "retainer_table_impact",
+      "geom1": "table",
+      "geom2": "retainer_contact",
+      "condim": 4,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ]
+    },
+    {
+      "name": "yoke_table_impact",
+      "geom1": "table",
+      "geom2": "yoke_contact",
+      "condim": 4,
+      "friction": [
+        0.7,
+        0.7,
+        0.005,
+        0.0001,
+        0.0001
+      ],
+      "solref": [
+        0.001,
+        1
+      ],
+      "solimp": [
+        0.95,
+        0.99,
+        0.0002
+      ],
+      "margin": 0.0005
+    }
+  ],
+  "free_body_damping": {
+    "base": {
+      "linear": 0.1,
+      "angular": 0.001
+    },
+    "motor": {
+      "linear": 0.1,
+      "angular": 0.001
+    }
+  },
+  "provenance": {
+    "source": "Feather assembly scene snapshot",
+    "captured_utc": "2026-11-05T19:00:15.679298+00:00",
+    "source_sha256": {
+      "assembly_backend.py": "7b641b846425d86fbfcef336a34df118c07b0e0df9496342e1c958ad355c1b46",
+      "layout.json": "1fcfee1d3fbf85d9e161c3ac1215be9d49102d663e17939d9ac636b1678d722b",
+      "visual_scene.py": "4addee360a64ae334afe2040803bce8d4d64824d65fa5b14a99890574a9aed86"
+    },
+    "shared_update": "Indexed mating targets and approach; continuous original-surface motor/base and motor/horn contacts with compliant response; source-contained bearing/rail contacts;0.5mm yoke/table contact skin for fast corner impacts; original-material and table-plane reward guards;64MiB contact arena. Hardware calibration remains unmeasured."
+  },
+  "reset_distribution": "all_loose",
+  "reference_prefix": "data/so101/shared_v14_reference",
+  "motor_base_search": {
+    "initpoints": 40,
+    "iterations": 40
+  },
+  "solver": {
+    "iterations": 100,
+    "tolerance": 1e-12,
+    "noslip_iterations": 20,
+    "noslip_tolerance": 1e-12
+  },
+  "contact_exclusions": [
+    {
+      "body1": "base",
+      "body2": "motor"
+    }
+  ],
+  "contact_surfaces": [
+    {
+      "body": "retainer",
+      "name": "retainer_base_surface",
+      "type": "mesh",
+      "mesh": "retainer_mesh",
+      "group": 3,
+      "contype": 0,
+      "conaffinity": 0,
+      "density": 0
+    },
+    {
+      "body": "base",
+      "name": "base_rail_1_0",
+      "type": "box",
+      "pos": [
+        -0.01,
+        0.008,
+        -0.0059
+      ],
+      "size": [
+        0.0005,
+        0.002,
+        0.0001
+      ],
+      "group": 3,
+      "contype": 0,
+      "conaffinity": 0,
+      "density": 0
+    },
+    {
+      "body": "base",
+      "name": "base_rail_1_1",
+      "type": "box",
+      "pos": [
+        0.01,
+        0.008,
+        -0.0059
+      ],
+      "size": [
+        0.0005,
+        0.002,
+        0.0001
+      ],
+      "group": 3,
+      "contype": 0,
+      "conaffinity": 0,
+      "density": 0
+    },
+    {
+      "body": "base",
+      "name": "base_rail_-1_0",
+      "type": "box",
+      "pos": [
+        -0.01,
+        0.008,
+        0.026099999999999998
+      ],
+      "size": [
+        0.0005,
+        0.002,
+        0.0001
+      ],
+      "group": 3,
+      "contype": 0,
+      "conaffinity": 0,
+      "density": 0
+    },
+    {
+      "body": "base",
+      "name": "base_rail_-1_1",
+      "type": "box",
+      "pos": [
+        0.01,
+        0.008,
+        0.026099999999999998
+      ],
+      "size": [
+        0.0005,
+        0.002,
+        0.0001
+      ],
+      "group": 3,
+      "contype": 0,
+      "conaffinity": 0,
+      "density": 0
+    }
+  ],
+  "gripper": {
+    "closed_command_rad": -0.23,
+    "open_command_rad": 0.75,
+    "joint_range_rad": [
+      -0.24,
+      1.7453291995659765
+    ],
+    "distal_source_y_max_m": -0.04,
+    "stop_solref": [
+      0.001,
+      1.0
+    ],
+    "stop_solimp": [
+      0.95,
+      0.99,
+      0.0002
+    ],
+    "scope": "Bare source CAD; close against native distal finger contact. Real pads/calibration unmeasured.",
+    "object_solref": [
+      0.001,
+      1.0
+    ],
+    "object_solimp": [
+      0.999,
+      0.9999,
+      0.0001,
+      0.5,
+      2.0
+    ]
+  },
+  "grasp_search": {
+    "initpoints": 16,
+    "iterations": 20
+  },
+  "prepared_scenes": {
+    "completion_base_quaternions": {
+      "motor": [
+        0.7071067811865476,
+        -0.7071067811865476,
+        0,
+        0
+      ],
+      "horn": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "screw": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "retainer": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "yoke": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "table_clearance_m": 0.0003,
+    "scope": "A previews completed-task shared reward targets: motor stays sideways; horn completion rotates upright; later tasks retain upright orientation",
+    "validated_tasks": [
+      "motor",
+      "horn",
+      "screw",
+      "retainer",
+      "yoke"
+    ]
+  },
+  "horn_search": {
+    "initpoints": 40,
+    "iterations": 40
+  },
+  "assembly_search": {
+    "initpoints": 40,
+    "iterations": 40
+  },
+  "mating_targets": {
+    "horn": {
+      "lift_m": 0.00085,
+      "shaft_yaw_deg": -3.0
+    },
+    "yoke": {
+      "lift_m": 0.0006,
+      "shaft_yaw_deg": -3.0
+    }
+  },
+  "mating_geometry": {
+    "horn_bearing_patches": true
+  },
+  "arena_memory": "64M",
+  "motor_base_contact_guard": true,
+  "motor_horn_contact_guard": true
+}

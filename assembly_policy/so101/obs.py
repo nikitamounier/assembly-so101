@@ -10,15 +10,6 @@ import torch
 from ..rl.obs import quat_to_mat_torch, sample_surface
 from .scene import ASSEMBLY_TASKS, OBS_BODIES, model
 
-# Relative component weights, normalized inside the combined mating budget.
-TOOL_COUNTS = {
-    "driver": 40,
-    "driver_trigger_saddle": 8,
-    "driver_forward": 4,
-    "driver_reverse": 4,
-    "driver_bit": 8,
-}
-
 MATING_BODIES = {task: ("base", *ASSEMBLY_TASKS[:i]) for i, task in enumerate(ASSEMBLY_TASKS)}
 
 
@@ -55,7 +46,7 @@ def require_observation_signature(config, tables):
 
 
 class PointTables:
-    """n_fix includes both the predecessor assembly and screw-task tool."""
+    """n_fix samples the receiving assembly for every task."""
 
     def __init__(self, task_names, n_part=128, n_fix=256, n_grip=64, seed=0, device="cpu"):
         if n_grip % 4:
@@ -73,9 +64,7 @@ class PointTables:
             for gid in range(m.ngeom):
                 if m.body_weldid[m.geom_bodyid[gid]] != m.body_weldid[bid]:
                     continue
-                if name.startswith("driver") and m.geom_bodyid[gid] != bid:
-                    continue
-                if m.geom_group[gid] == 3 or (not name.startswith("driver") and m.geom_group[gid] != 2):
+                if m.geom_group[gid] != 2:
                     continue
                 mid = m.geom_dataid[gid]
                 if mid >= 0 and int(m.geom_type[gid]) in (
@@ -128,17 +117,11 @@ class PointTables:
             ids = [active] * n_part
             receivers = MATING_BODIES[task]
             pools = {name: body_samples(name, max(8192, n_fix * 32)) for name in receivers}
-            receiving_budget = n_fix - (n_fix // 2 if task == "screw" else 0)
-            counts = surface_budget([surface_areas[name] for name in receivers], receiving_budget)
+            counts = surface_budget([surface_areas[name] for name in receivers], n_fix)
             self.mating_counts[task] = {name: int(count) for name, count in zip(receivers, counts)}
             for name, count in self.mating_counts[task].items():
                 p.extend(farthest(pools[name], count))
                 ids.extend([names.index(name)] * count)
-            if task == "screw":
-                tool_counts = surface_budget(list(TOOL_COUNTS.values()), n_fix // 2, minimum=0)
-                for name, count in zip(TOOL_COUNTS, tool_counts):
-                    p.extend(farthest(body_samples(name, max(4096, int(count) * 16)), int(count)))
-                    ids.extend([names.index(name)] * int(count))
             points.append(p)
             which.append(ids)
         self.points = torch.tensor(np.array(points), dtype=torch.float32, device=device)

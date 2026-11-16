@@ -10,6 +10,7 @@ import pytest
 from assembly_policy.compute.probe import payload
 from assembly_policy.rl.remote import _pack
 from assembly_policy.rl.transport import TLSListener, connect
+from assembly_policy.so101.env import PROPRIO_DIM
 
 
 @pytest.fixture
@@ -97,6 +98,6 @@ def test_wire_uses_one_current_frame_not_five_frame_history():
     data.pop("done")
     data["proprio"] = np.tile(frame, (1, 5))
     packed = _pack(data, 2)
-    assert packed["frame"].shape == (32, 53)
+    assert packed["frame"].shape == (32, PROPRIO_DIM)
     assert "proprio" not in packed
-    np.testing.assert_array_equal(packed["frame"], data["proprio"][:, -53:])
+    np.testing.assert_array_equal(packed["frame"], data["proprio"][:, -PROPRIO_DIM:])

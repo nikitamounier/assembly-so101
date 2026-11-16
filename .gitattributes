@@ -1,1 +1,5 @@
 assembly_policy/viewer/static/** linguist-generated=true -whitespace
+runtime/wowrobo-viewer/** linguist-vendored=true
+runtime/wowrobo-viewer/**/*.obj binary
+runtime/wowrobo-viewer/**/*.stl binary
+runtime/wowrobo-viewer/**/*.npz binary

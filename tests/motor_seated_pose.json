@@ -53,18 +53,7 @@
     0.9999999999988218,
     1.5352961886145947e-06,
     2.568078168443097e-12,
-    -3.3637916489408053e-09,
-    -0.13499986418283821,
-    0.02000012077821141,
-    0.013999476233601288,
-    0.4999976978348578,
-    0.4999936920546297,
-    0.5000019919426337,
-    -0.5000066180750218,
-    -8.577077327312755e-13,
-    -8.575810123812594e-13,
-    -3.2078845757291673e-06,
-    4.677602500678863e-15
+    -3.3637916489408053e-09
   ],
   "qvel": [
     -5.73425614808895e-06,
@@ -114,17 +103,7 @@
     6.575178755972932e-15,
     -1.6748946556997483e-14,
     1.937214962933087e-10,
-    -1.2841727231578594e-12,
-    -5.029205898720335e-12,
-    -1.5383366343169315e-14,
-    -3.956542314561147e-13,
-    1.5598524659652428e-13,
-    1.1182722970124126e-12,
-    3.4244932300343285e-10,
-    1.421336964088558e-13,
-    1.3036687598976469e-13,
-    1.060601919984861e-13,
-    -6.842745913665428e-13
+    -1.2841727231578594e-12
   ],
   "reference": [
     -0.0679695869798321,
@@ -140,5 +119,5 @@
     -1.483119558874775,
     0.7499932801405634
   ],
-  "scope": "Previously called seated; later identified as invalid material overlap. Preserve original simulation joints/controls as rejection evidence, not successful seating. No headset/session data."
+  "scope": "Previously called seated; later identified as invalid material overlap. Preserve original simulation joints/controls as rejection evidence, not successful seating. No headset/session data. Retired tool joints omitted; all arm and assembly coordinates preserved exactly."
 }

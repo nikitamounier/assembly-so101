@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "profile": "wowrobo-stage-randomization-repaired-20261107-v1",
+  "nominal_profile": "wowrobo-photo-reset-repaired-20261107-v1",
+  "nominal_bank": "assets_local/wowrobo/photo-resets-repaired-v1",
+  "status": "candidate_distribution_specification; physical admission requires validation",
+  "sampling": {
+    "train_per_stage": 640,
+    "eval_per_stage": 128,
+    "train_total": 16000,
+    "eval_total": 3200,
+    "train_difficulty": [
+      {
+        "name": "easy",
+        "probability": 0.4,
+        "count_per_stage": 256,
+        "interval": [
+          0,
+          0.3333333333333333
+        ]
+      },
+      {
+        "name": "medium",
+        "probability": 0.4,
+        "count_per_stage": 256,
+        "interval": [
+          0.3333333333333333,
+          0.6666666666666666
+        ]
+      },
+      {
+        "name": "hard",
+        "probability": 0.2,
+        "count_per_stage": 128,
+        "interval": [
+          0.6666666666666666,
+          1
+        ]
+      }
+    ],
+    "eval_difficulty": "stratified_uniform_0_1",
+    "independent_train_eval_seeds": true,
+    "deduplicate_states": true,
+    "duplicate_padding": false
+  },
+  "global": {
+    "pickup_held_fraction": 0.8,
+    "pickup_approach_gap_m": [
+      0.001,
+      0.003
+    ],
+    "pin_pickup_approach_gap_m": [
+      0.0005,
+      0.001
+    ],
+    "waiting_arm_joint_noise_deg": 3,
+    "preserve_tangent_and_nearest_end": true,
+    "held_case_gripper_transform_coherent": true,
+    "support_grasps_reclose_and_settle": true,
+    "randomize_independent_support_joints": false,
+    "contact_penetration_limit_m": 0.0005,
+    "reject_already_completed_near_states": true,
+    "engaged_offsets_capped_by_measured_clearance": true,
+    "difficulty_scales_coupled_pose_offsets": true,
+    "connector": {
+      "joint": "target_servo_1_shaft",
+      "axis_manifest_servo": "1",
+      "initial_angle_deg": [
+        -3,
+        3
+      ],
+      "qualified_expansion_angle_deg": [
+        -8,
+        8
+      ],
+      "expand_only_after_validation": true,
+      "first_active_stage_id": "12_pin_pickup",
+      "base_fixed": true,
+      "propagate_to_installed_descendants": true,
+      "propagate_receivers_goals_observation_points": true,
+      "loose_unattached_parts_inherit": false,
+      "recompute_affected_grasps_ik": true,
+      "installed_descendants_by_phase": {
+        "12_to_15": [
+          "shoulder_connector"
+        ],
+        "17_to_23": [
+          "shoulder_connector",
+          "assembly_pin"
+        ],
+        "25_onward": [
+          "shoulder_connector",
+          "assembly_pin",
+          "upper_arm_module"
+        ]
+      },
+      "installed_start_id": 12,
+      "yaw_deg": 3
+    },
+    "friction": {
+      "parameter": "sliding_friction",
+      "categories": [
+        "finger_part",
+        "part_table",
+        "part_part"
+      ],
+      "draw_scope": "once_per_environment_episode",
+      "constant_during_episode": true,
+      "save_reset_metadata": true,
+      "verify_effective_contact_friction": true,
+      "torsional_rolling_and_joint_friction": "nominal",
+      "multiplier_range": [
+        0.97,
+        1.03
+      ]
+    },
+    "loose_tangent_interpretation": "Nominal tangent placement plus configured tiny yaw; preserve nearest designated grasp end"
+  },
+  "stages": {
+    "00_loose": {
+      "category": "loose",
+      "translation_xy_m": 0.05,
+      "expanded_translation_xy_m": 0.08,
+      "task": "initial_scene",
+      "active_arm": null,
+      "frame": "world",
+      "installed_connector_rotation": false,
+      "tangent_yaw_noise_deg": 2
+    },
+    "01_cover_pickup": {
+      "category": "pickup",
+      "translation_xy_m": 0.03,
+      "grasp_slide_m": 0.002,
+      "grasp_angle_deg": 2,
+      "task": "base_side_cover",
+      "active_arm": "left",
+      "frame": "world",
+      "installed_connector_rotation": false
+    },
+    "03_cover_aligned": {
+      "category": "aligned",
+      "lateral_radius_m": 0.004,
+      "angle_deg": 3,
+      "stand_off_m": [
+        0.04,
+        0.065
+      ],
+      "task": "base_side_cover",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "04_cover_entry": {
+      "category": "entry",
+      "axial_noise_m": 0.002,
+      "lateral_radius_m": 0.0005,
+      "angle_deg": 1,
+      "task": "base_side_cover",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "05_cover_near": {
+      "category": "near",
+      "axial_noise_m": 0.0004,
+      "lateral_radius_m": 0.0002,
+      "angle_deg": 0.5,
+      "task": "base_side_cover",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "07_connector_pickup": {
+      "category": "pickup",
+      "translation_xy_m": 0.03,
+      "grasp_slide_m": 0.0015,
+      "horizontal_approach_max_pitch_deg": 3,
+      "task": "shoulder_connector",
+      "active_arm": "right",
+      "frame": "world",
+      "installed_connector_rotation": false
+    },
+    "08_connector_aligned": {
+      "category": "aligned",
+      "stand_off_m": [
+        0.045,
+        0.08
+      ],
+      "lateral_radius_m": 0.003,
+      "angle_deg": 2,
+      "horizontal_approach_max_pitch_deg": 3,
+      "task": "shoulder_connector",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "09_connector_entry": {
+      "category": "entry",
+      "axial_noise_m": 0.002,
+      "lateral_radius_m": 0.0004,
+      "angle_deg": 1,
+      "horizontal_approach_max_pitch_deg": 3,
+      "task": "shoulder_connector",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "10_connector_near": {
+      "category": "near",
+      "axial_noise_m": 0.0004,
+      "lateral_radius_m": 0.0002,
+      "angle_deg": 0.5,
+      "horizontal_approach_max_pitch_deg": 3,
+      "task": "shoulder_connector",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": false
+    },
+    "12_pin_pickup": {
+      "category": "pickup",
+      "translation_xy_m": 0.02,
+      "grasp_slide_m": 0.002,
+      "grasp_slide_axis": "pin_local_z",
+      "grip_region": "large_upper_cylinder_only",
+      "task": "assembly_pin",
+      "active_arm": "left",
+      "frame": "world",
+      "installed_connector_rotation": true
+    },
+    "13_pin_aligned": {
+      "category": "aligned",
+      "stand_off_m": [
+        0.02,
+        0.04
+      ],
+      "lateral_radius_m": 0.00075,
+      "angle_deg": 1,
+      "task": "assembly_pin",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "14_pin_half": {
+      "category": "partial",
+      "axial_noise_m": 0.002,
+      "lateral_radius_m": 0.0001,
+      "angle_deg": 0.4,
+      "task": "assembly_pin",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "15_pin_near": {
+      "category": "near",
+      "axial_noise_m": 0.00025,
+      "lateral_radius_m": 5e-05,
+      "angle_deg": 0.25,
+      "task": "assembly_pin",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "17_left_support": {
+      "category": "support_transition",
+      "grasp_slide_m": 0.001,
+      "task": "upper_arm_module",
+      "active_arm": null,
+      "frame": "world",
+      "installed_connector_rotation": true
+    },
+    "18_upper_floor_grasp": {
+      "category": "pickup",
+      "translation_xy_m": 0.03,
+      "grasp_slide_m": 0.0015,
+      "grasp_angle_deg": 2,
+      "preserve_pickup_orientation": true,
+      "task": "upper_arm_module",
+      "active_arm": "right",
+      "frame": "world",
+      "installed_connector_rotation": true
+    },
+    "20_upper_transport": {
+      "category": "transport",
+      "translation_xy_m": 0.02,
+      "angle_deg": 5,
+      "sag_deg": [
+        5,
+        11
+      ],
+      "task": "upper_arm_module",
+      "active_arm": "right",
+      "frame": "world",
+      "installed_connector_rotation": true,
+      "z_m": 0.01
+    },
+    "21_upper_far_side": {
+      "category": "far_side_supported",
+      "rest_slide_m": 0.001,
+      "axial_noise_m": 0.003,
+      "recompute_resting_angle": true,
+      "task": "upper_arm_module",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "22_upper_half": {
+      "category": "partial",
+      "axial_noise_m": 0.002,
+      "lateral_radius_m": 0.0002,
+      "angle_deg": 0.5,
+      "maintain_far_support": true,
+      "task": "upper_arm_module",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "23_upper_near": {
+      "category": "near",
+      "axial_noise_m": 0.00025,
+      "lateral_radius_m": 0.0001,
+      "angle_deg": 0.25,
+      "maintain_far_support": true,
+      "task": "upper_arm_module",
+      "active_arm": "right",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "25_right_support": {
+      "category": "support_transition",
+      "grasp_slide_m": 0.001,
+      "task": "forearm_module",
+      "active_arm": null,
+      "frame": "world",
+      "installed_connector_rotation": true
+    },
+    "26_final_floor_grasp": {
+      "category": "pickup",
+      "translation_xy_m": 0.03,
+      "grasp_slide_m": 0.0015,
+      "grasp_angle_deg": 2,
+      "preserve_wrist_branch": true,
+      "task": "forearm_module",
+      "active_arm": "left",
+      "frame": "world",
+      "installed_connector_rotation": true
+    },
+    "28_final_transport": {
+      "category": "transport",
+      "translation_xy_m": 0.02,
+      "angle_deg": 5,
+      "sag_deg": [
+        5,
+        11
+      ],
+      "task": "forearm_module",
+      "active_arm": "left",
+      "frame": "world",
+      "installed_connector_rotation": true,
+      "z_m": 0.01
+    },
+    "29_final_far_side": {
+      "category": "far_side_supported",
+      "rest_slide_m": 0.001,
+      "axial_noise_m": 0.003,
+      "recompute_resting_angle": true,
+      "task": "forearm_module",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "30_final_half": {
+      "category": "partial",
+      "axial_noise_m": 0.0015,
+      "lateral_radius_m": 0.0002,
+      "angle_deg": 0.5,
+      "maintain_far_support": true,
+      "task": "forearm_module",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    },
+    "31_final_near": {
+      "category": "near",
+      "axial_noise_m": 0.00025,
+      "lateral_radius_m": 0.0001,
+      "angle_deg": 0.25,
+      "maintain_far_support": true,
+      "task": "forearm_module",
+      "active_arm": "left",
+      "frame": "receiver",
+      "installed_connector_rotation": true
+    }
+  },
+  "component_assets": "assets_local/wowrobo/components-repaired-v1",
+  "cad_revision": "final-common-v1",
+  "frozen_cad_ready": "outputs/insertion-fix-20261107/final-common-v1/FINAL_READY.json",
+  "pin_registration_path": "outputs/insertion-fix-20261107/pin/consistent-v3/registration.json",
+  "completed_anchor_bank": "assets_local/wowrobo/photo-resets-repaired-v1/completed",
+  "grid_manifest": "outputs/insertion-fix-20261107/final-common-v1/grids/manifest.json",
+  "physical_mating_profile": "legacy_mapped_all",
+  "pin_mesh": "assets_local/wowrobo/components-repaired-v1/meshes/pin.obj",
+  "pin_pose_registered": true
+}

@@ -1,0 +1,30 @@
+{
+  "repository": "desmondzee/ICL-so101",
+  "revision": "01782763fb8ad2473af96a345f91bfc319300326",
+  "files": [
+    {
+      "path": "sim/so101/so101_new_calib_camera.xml",
+      "local": "so101_new_calib_camera.xml",
+      "url": "https://raw.githubusercontent.com/desmondzee/ICL-so101/01782763fb8ad2473af96a345f91bfc319300326/sim/so101/so101_new_calib_camera.xml",
+      "sha256": "bfe6dabc6907d211cc5222ead61803562649293586d81e91a95b2d945d9eddad"
+    },
+    {
+      "path": "sim/so101/assets/wrist_camera_mount_so101_v1.stl",
+      "local": "wrist_camera_mount_so101_v1.stl",
+      "url": "https://raw.githubusercontent.com/desmondzee/ICL-so101/01782763fb8ad2473af96a345f91bfc319300326/sim/so101/assets/wrist_camera_mount_so101_v1.stl",
+      "sha256": "e17a626158951ac8cdf8d960962c1a3c8bf23b64635a02f88b62016fe895cef8"
+    },
+    {
+      "path": "sim/so101/assets/wrist_camera_so101_v1.stl",
+      "local": "wrist_camera_so101_v1.stl",
+      "url": "https://raw.githubusercontent.com/desmondzee/ICL-so101/01782763fb8ad2473af96a345f91bfc319300326/sim/so101/assets/wrist_camera_so101_v1.stl",
+      "sha256": "1147857bb136876c81f98d18b533342bae2383f0e23bec216064c9f093bd3577"
+    },
+    {
+      "path": "LICENSE",
+      "local": "LICENSE",
+      "url": "https://raw.githubusercontent.com/desmondzee/ICL-so101/01782763fb8ad2473af96a345f91bfc319300326/LICENSE",
+      "sha256": "836989f75e782c256037af7be8ebe5a00c81f38b64155647dad0affb79f00bcb"
+    }
+  ]
+}

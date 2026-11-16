@@ -1,0 +1,71 @@
+{
+  "profile": "wowrobo-initial-layout-20261107-v5",
+  "helper_rear_edge_distance_m": 0.72,
+  "target_rear_from_left_rear_m": 0.3,
+  "rear_reference": "outer rear X edge of printed Base_SO101 footprint; electronics excluded",
+  "table_half_size_m": [
+    0.65,
+    0.46
+  ],
+  "minimum_planar_clearance_m": 0.008,
+  "grasp_radius_m": [
+    0.15,
+    0.31
+  ],
+  "long_part_minimum_grasp_radius_m": 0.24,
+  "forward_half_angle_degrees": 82,
+  "pickup_order": [
+    {
+      "piece": "base_side_cover",
+      "arm": "left",
+      "grip_axis_sign": -1
+    },
+    {
+      "piece": "shoulder_connector",
+      "arm": "right"
+    },
+    {
+      "piece": "assembly_pin",
+      "arm": "left"
+    },
+    {
+      "piece": "upper_arm_module",
+      "arm": "right",
+      "servo": 2
+    },
+    {
+      "piece": "forearm_module",
+      "arm": "left",
+      "servo": 3,
+      "grip_axis_sign": -1
+    }
+  ],
+  "nominal_polar": {
+    "base_side_cover": [
+      0.22,
+      58
+    ],
+    "shoulder_connector": [
+      0.22,
+      -58
+    ],
+    "assembly_pin": [
+      0.2,
+      -70
+    ],
+    "upper_arm_module": [
+      0.28,
+      47
+    ],
+    "forearm_module": [
+      0.28,
+      -37
+    ]
+  },
+  "tangent_convention": "horizontal grip span tangent at grasp center; designated grasp end faces assigned shoulder axis and the component extends away from that arm",
+  "stage": "initial grounded layout/reset geometry; contact dynamics and grasp IK not qualified",
+  "nearest_grasp_end": true,
+  "servo_nearest_end_tolerance_m": 1e-08,
+  "cover_side_grip_inset_m": 0.018,
+  "connector_grip_height_above_socket_bottom_m": 0.009
+}

@@ -31,8 +31,8 @@ def modal_pool(args, ticket):
         app = modal.App("assembly-so101-cpu")
         worker = app.function(
             image=image,
-            cpu=args.cpus,
-            memory=args.memory_mib,
+            cpu=(args.cpus, args.cpus),
+            memory=(args.memory_mib, args.memory_mib),
             region=args.region,
             timeout=int(args.seconds) + 60,
             max_containers=args.hosts,
@@ -91,7 +91,7 @@ def sail_pool(args, ticket):
             ticket_path.chmod(0o600)
             processes = []
             for box in boxes:
-                box.fs.upload_file(ticket_path, "/tmp/so101-ticket.json")
+                box.fs.write("/tmp/so101-ticket.json", ticket_path.read_bytes(), mode=0o600)
                 command = [
                     "python",
                     "-m",

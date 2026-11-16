@@ -1,0 +1,80 @@
+{
+  "enabled": false,
+  "credits_usd": {
+    "modal": 1500,
+    "sail": 1500
+  },
+  "envs": 8192,
+  "steps": 32,
+  "worker_slots": 512,
+  "chimera_baseline_cpus": [
+    400,
+    500
+  ],
+  "pools": [
+    {
+      "provider": "modal",
+      "hosts": 25,
+      "workers": 4,
+      "threads": 2,
+      "cpus": 8,
+      "memory_mib": 16384,
+      "seconds": 7200,
+      "region": "SET_AFTER_NETWORK_PROBE",
+      "estimated_hourly_usd": 25,
+      "max_cost_usd": 50
+    }
+  ],
+  "deferred_providers": [
+    "sail"
+  ],
+  "target_cloud_cpu_units": 4092,
+  "target_cloud_cpu_units_verified": false,
+  "planning_note": "Modal is the only active cloud provider in this disabled preparation template; Chimera remains additive. Pool sizes are an illustrative smoke fleet, not the4092 target. Confirm Modal CPU units, quota, worker-slot sizing and measured throughput before activation. SAIL deferred until concurrency increase. At main-run launch checkpoint and stop cube processes, retain and adopt its existing CPU allocations, preserve/rebind renewal ownership, and then add new jobs greedily. Do not invoke the fresh Chimera pool launcher for the retained baseline: it submits replacement jobs and cancels its own jobs on exit. Refresh job IDs and verify live allocation ownership at handoff. This template remains disabled.",
+  "retained_chimera": {
+    "mode": "adopt_existing_allocations_at_launch",
+    "source_config": "/Users/nikitamounier/Documents/ChatGPT/robot assembly 2/assembly-so101/operational/cube-trial-20261107/cluster.json",
+    "last_known_cpu_job_ids": [
+      "3602572",
+      "3602573",
+      "3602574",
+      "3602575",
+      "3602576",
+      "3602577",
+      "3602578",
+      "3602579",
+      "3602580",
+      "3602581",
+      "3602582",
+      "3602583",
+      "3602584",
+      "3602585",
+      "3602587",
+      "3602588",
+      "3602589",
+      "3602590",
+      "3602591",
+      "3602592",
+      "3602593",
+      "3602594",
+      "3602596",
+      "3602597",
+      "3602598",
+      "3602599",
+      "3602601",
+      "3602603",
+      "3602604",
+      "3602605",
+      "3602606",
+      "3602607",
+      "3602608",
+      "3602609",
+      "3602610"
+    ],
+    "verified_live": false,
+    "launch_handoff_implementation_pending": true,
+    "release_on_pool_exit": false
+  },
+  "chimera_capacity_policy": "Retained cube allocations form the owned baseline; greedily acquired additional Chimera allocations are on top of that baseline, subject to safe placement and usable learner capacity.",
+  "qualification_manifest": "../../robotics-assembly-3.0/outputs/hybrid-readiness-20261107/qualification.json"
+}

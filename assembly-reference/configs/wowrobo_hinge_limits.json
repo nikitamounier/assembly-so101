@@ -1,0 +1,63 @@
+{
+  "schema": "measured-native-hinge-stops-v1",
+  "noise_amplitude_deg": 0.05,
+  "source_fit_sha256": "b05b4242f365dc290b6f50acede8678ad9a3dfea104b863ab88aea4b9d2eb007",
+  "joints": {
+    "target_servo_2_shaft": {
+      "existing_range_rad": [
+        -1.7,
+        1.7
+      ],
+      "effective_range_rad": [
+        -0.625140986695226,
+        1.7
+      ],
+      "range_rad": [
+        -0.625140986695226,
+        3.7667262835625825
+      ],
+      "range_deg": [
+        -35.8179401382804,
+        215.81751862913373
+      ],
+      "contact_threshold_m": 1e-09,
+      "angular_bracket_width_rad": 2.6007462849975127e-10,
+      "pair_geoms": [
+        [
+          "upper_arm_module_printed_0__contact",
+          "servo_2_case__contact"
+        ]
+      ]
+    },
+    "target_servo_3_shaft": {
+      "existing_range_rad": [
+        -1.7,
+        1.7
+      ],
+      "effective_range_rad": [
+        -1.7,
+        0.6247426233091569
+      ],
+      "range_rad": [
+        -3.7664708840733754,
+        0.6247426233091569
+      ],
+      "range_deg": [
+        -215.80288531631237,
+        35.79511559754609
+      ],
+      "contact_threshold_m": 1e-09,
+      "angular_bracket_width_rad": 2.600742954328439e-10,
+      "pair_geoms": [
+        [
+          "forearm_module_printed_0__contact",
+          "servo_3_case__contact"
+        ],
+        [
+          "forearm_module_printed_1__contact",
+          "servo_3_case__contact"
+        ]
+      ]
+    }
+  }
+}

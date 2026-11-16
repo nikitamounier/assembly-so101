@@ -1,0 +1,97 @@
+"""Canonical current-assembly native factory for training (never viewer XML)."""
+
+import ast
+import hashlib
+import importlib.util
+import json
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import mujoco
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_PROFILE = (
+    ROOT / "assets_local/wowrobo/physical-resets-repaired-cover-support-v2/profile.json"
+)
+_CACHE = {}
+
+
+def load_native(profile_path=DEFAULT_PROFILE):
+    path = Path(profile_path).resolve()
+    profile = json.loads(path.read_text())
+    source = Path(profile["model_path"])
+    if hashlib.sha256(source.read_bytes()).hexdigest() != profile["model_sha256"]:
+        raise ValueError("Current assembly physical model identity changed")
+    key = str(path)
+    if key not in _CACHE:
+        name = "_wowrobo_training_native_backend"
+        backend = sys.modules.get(name)
+        if backend is None:
+            spec = importlib.util.spec_from_file_location(
+                name, ROOT / "assembly_policy/so101/wowrobo_contact_backend.py"
+            )
+            backend = importlib.util.module_from_spec(spec)
+            sys.modules[name] = backend
+            spec.loader.exec_module(backend)
+        backend.load_backend(profile["grid_manifest"])
+        # Mode 2 is the exhaustive diagnostic oracle; training uses the exact
+        # surface tree to avoid scanning every source sample at each substep.
+        backend.set_surface_mode(1)
+        tree = ET.parse(source).getroot()
+        size = tree.find("size")
+        if size is None:
+            size = ET.SubElement(tree, "size")
+        # Deep diagnostic contacts can exceed MuJoCo's default 64 MiB arena.
+        # Capacity only: contact laws and solver settings remain unchanged.
+        size.set("memory", "256M")
+        sensors = tree.find("sensor")
+        if sensors is None:
+            sensors = ET.SubElement(tree, "sensor")
+        ET.SubElement(
+            sensors,
+            "contact",
+            name="training_min_contact_distance",
+            data="dist",
+            num="1",
+            reduce="mindist",
+        )
+        contact = tree.find("contact")
+        if contact is None:
+            contact = ET.SubElement(tree, "contact")
+        existing = {
+            frozenset((p.get("geom1"), p.get("geom2"))) for p in contact.findall("pair")
+        }
+        mechanics_source = ROOT / "assembly_policy/so101/wowrobo_physical_resets.py"
+        constants = {}
+        for node in ast.parse(mechanics_source.read_text()).body:
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id in (
+                        "PASSIVE_BRACKET_STOPS",
+                        "PASSIVE_BRACKET_STOP_LAW",
+                    ):
+                        constants[target.id] = ast.literal_eval(node.value)
+        for motor, bracket in constants["PASSIVE_BRACKET_STOPS"]:
+            if frozenset((motor, bracket)) not in existing:
+                ET.SubElement(
+                    contact,
+                    "pair",
+                    geom1=motor,
+                    geom2=bracket,
+                    **constants["PASSIVE_BRACKET_STOP_LAW"],
+                )
+        xml = ET.tostring(tree, encoding="unicode")
+        m = mujoco.MjModel.from_xml_string(xml)
+        m.opt.jacobian = mujoco.mjtJacobian.mjJAC_SPARSE
+        if m.opt.gravity[2] >= 0 or m.npair == 0 or not any(m.geom_contype):
+            raise ValueError("Training requires gravity and enabled source contacts")
+        identity = hashlib.sha256(
+            xml.encode()
+            + mujoco.__version__.encode()
+            + Path(__file__).read_bytes()
+            + Path(profile["grid_manifest"]).read_bytes()
+            + mechanics_source.read_bytes()
+        ).hexdigest()
+        _CACHE[key] = (m, profile, identity)
+    return _CACHE[key]

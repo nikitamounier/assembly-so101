@@ -11,14 +11,13 @@ import numpy as np
 
 from .collision import replace_gripper_collision
 from .fastener import AXIS, attributes, origins, target_rotations
-from .tool import add_driver
 from .workcell import apply_model, apply_xml, load_contact_search
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "assets_local"
 PARTS = ("base", "motor", "horn", "screw", "retainer", "yoke")
 ASSEMBLY_TASKS = ("motor", "horn", "screw", "retainer", "yoke")
-OBS_BODIES = (*PARTS, "driver", "driver_trigger_saddle", "driver_forward", "driver_reverse", "driver_bit")
+OBS_BODIES = PARTS
 JOINTS = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper")
 COLORS = {
     "base": ".79 .81 .84 1",
@@ -56,7 +55,7 @@ def load_plugin():
     load_contact_search()
     os.environ["ASSEMBLENIST_SDF_DIR"] = str(ASSETS / "sdf")
     mujoco.mj_loadPluginLibrary(str(ROOT / "plugin/build/libassemblenist_sdf.so"))
-    mujoco.mj_loadPluginLibrary(str(ROOT / "plugin/build/libso101_driver.so"))
+    mujoco.mj_loadPluginLibrary(str(ROOT / "plugin/build/libso101_screw_head.so"))
 
 
 def build_xml(assembled=False, contact_monitor=False):
@@ -266,7 +265,6 @@ def build_xml(assembled=False, contact_monitor=False):
                 solimp=".99 .999 .00005",
             )
             add(geom, "plugin", instance="female")
-    add_driver(world, ext, contact, asset=asset)
     if contact_monitor:
         sensors = add(root, "sensor")
         add(sensors, "contact", name="min_contact_distance", data="dist", num="1", reduce="mindist")

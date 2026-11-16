@@ -30,8 +30,10 @@ PROTO = 2  # 2: workers send only the newest proprio frame; the learner keeps th
 
 
 def _pack(o, proto, ids=None):
-    """Observation dict for the wire: protocol 2 replaces the 150-d proprio history by its newest
-    30-d frame (the learner rebuilds the history exactly: shift, or repeat after a reset)."""
+    """Send only the newest proprio frame in protocol 2.
+
+    The learner rebuilds the history exactly: shift, or repeat after a reset.
+    """
     sel = (lambda x: x) if ids is None else (lambda x: x[ids])
     d = {k: sel(o[k]) for k in OBS_KEYS if k != "proprio"}
     if proto >= 2:
@@ -558,11 +560,20 @@ def _serve(conn, nthread):
     except (EOFError, OSError) as e:
         raise _NoSlice() from e
     config_type, env_type = EnvConfig, BatchedAssemblyEnv
+    if init["ecfg"].get("suite") == "wowrobo":
+        from ..wowrobo.env import BatchedAssemblyEnv as env_type
+        from ..wowrobo.env import EnvConfig as config_type
     ecfg = config_type(**{**init["ecfg"], "nthread": nthread})
     if init.get("model_signature"):
-        from ..so101.resets import signature
+        if ecfg.suite == "wowrobo":
+            from ..wowrobo.runtime import load_runtime
 
-        if signature() != init["model_signature"]:
+            worker_signature = load_runtime(ecfg.profile_path)[2]
+        else:
+            from ..so101.resets import signature
+
+            worker_signature = signature()
+        if worker_signature != init["model_signature"]:
             raise ValueError("Worker geometry/source differs from the learner")
     n = len(init["state"])
     env = env_type(init["tasks"], np.zeros(n, dtype=np.int64), ecfg)

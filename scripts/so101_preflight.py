@@ -14,8 +14,7 @@ import torch
 from assembly_policy.so101.env import PROPRIO_DIM, TASK_NAMES, BatchedAssemblyEnv, EnvConfig
 from assembly_policy.so101.obs import PointTables
 from assembly_policy.so101.resets import check_bank, directory_signature, signature
-from assembly_policy.so101.robot import home
-from assembly_policy.so101.scene import ASSETS, ROOT, model
+from assembly_policy.so101.scene import ASSETS, ROOT
 from assembly_policy.so101.workcell import assert_matches_reference, default_bank_directory
 from scripts.so101_source_checks import sdf_equations_unchanged
 
@@ -144,7 +143,7 @@ def main():
     check("observation_shape", o["proprio"].shape == (len(TASK_NAMES), PROPRIO_DIM * 5))
     check("twelve_robot_actuators", env.m.nu == 12)
     check("no_attachment_constraints", env.m.neq == 0)
-    for name in (*TASK_NAMES, "base", "driver"):
+    for name in (*TASK_NAMES, "base"):
         check(name + "_free", int(env.m.joint(name + "_free").type[0]) == int(mujoco.mjtJoint.mjJNT_FREE))
     points = PointTables(TASK_NAMES)
     p = points(*[torch.tensor(o[k]) for k in ("task", "tcp_p", "tcp_R", "part_p", "part_q", "finger")])
@@ -179,24 +178,6 @@ def main():
     result["thread_check"] = {
         k: {kk: vv for kk, vv in v.items() if kk != "trace"} for k, v in result["thread_check"].items()
     }
-    m = model()
-    d = mujoco.MjData(m)
-    home(m, d)
-    for _ in range(1000):
-        mujoco.mj_step(m, d)
-    v = m.jnt_dofadr[m.joint("button_forward").id]
-    s = m.jnt_dofadr[m.joint("spindle").id]
-    check("driver_idle_without_press", abs(d.qvel[s]) < 0.001)
-    d.qfrc_applied[v] = 2.0
-    for _ in range(500):
-        mujoco.mj_step(m, d)
-    check(
-        "driver_runs_when_physically_pressed", d.joint("button_forward").qpos[0] > 0.0006 and d.qvel[s] > 20
-    )
-    d.qfrc_applied[v] = 0
-    for _ in range(1000):
-        mujoco.mj_step(m, d)
-    check("button_releases", d.joint("button_forward").qpos[0] < 0.0001)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(result, indent=2) + "\n")
     print(f"PASS: {len(result['checks'])} checks", flush=True)

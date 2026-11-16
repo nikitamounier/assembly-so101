@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
 import subprocess
 from pathlib import Path
 
@@ -15,6 +16,10 @@ from .probe import measure, serve
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    h = commands.add_parser("hybrid", help="Supervise a mixed provider fleet")
+    h.add_argument("--config", type=Path, required=True)
+    h.add_argument("--ticket", type=Path, required=True)
+    h.add_argument("--dry-run", action="store_true")
     for name in ("local", "chimera", "modal", "sail"):
         p = commands.add_parser(name, help=f"Run a bounded {name} CPU worker pool")
         p.add_argument(
@@ -63,7 +68,11 @@ def main(argv=None):
     p.add_argument("--tls-cert")
     p.add_argument("--tls-key")
     args = parser.parse_args(argv)
-    if args.command == "certificate":
+    if args.command == "hybrid":
+        from .hybrid import launch
+
+        launch(args.config, args.ticket, args.dry_run)
+    elif args.command == "certificate":
         args.directory.mkdir(parents=True, exist_ok=True)
         key, cert = args.directory / "key.pem", args.directory / "cert.pem"
         if key.exists() or cert.exists():
@@ -121,6 +130,11 @@ def main(argv=None):
                 print(json.dumps(run_workers(ticket, args.workers, args.threads, args.seconds)))
         else:
             from . import providers
+
+            def terminate(*_):
+                raise KeyboardInterrupt
+
+            signal.signal(signal.SIGTERM, terminate)
 
             getattr(providers, args.command + "_pool")(args, ticket)
 

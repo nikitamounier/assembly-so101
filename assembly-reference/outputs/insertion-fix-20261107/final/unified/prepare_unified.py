@@ -1,0 +1,24 @@
+from pathlib import Path
+import argparse,json,hashlib,copy,xml.etree.ElementTree as ET
+import mujoco,numpy as np
+from assembly_policy.so101.wowrobo_pin_contact_fit import replace_pin_asset,installed_fit_pin_qpos
+from assembly_policy.so101.wowrobo_contact_backend import prepare_scene
+from assembly_policy.so101.wowrobo_insertion_guide import build_guide
+ROOT=Path.cwd();out=ROOT/'outputs/insertion-fix-20261107/final/unified';p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--manifest',type=Path,required=True);args=p.parse_args();manifest=args.manifest.resolve();raw=out/'source-scene.xml';pin=replace_pin_asset(args.source,raw);m=mujoco.MjModel.from_xml_path(str(raw));a=json.loads((ROOT/'outputs/linear-insertion-aligned-20261107/final/alignment.json').read_text());diffs={}
+for k in ['start_qpos','initial_qpos','qpos_initial','reference_qpos','end_qpos','qpos_end']:
+ q=np.array(a[k]);qnew=installed_fit_pin_qpos(m,q,'29_final_far_side',head_stop=True);a[k]=qnew.tolist();diffs[k]=np.flatnonzero(q!=qnew).tolist()
+a['unified_prerequisite']='Currentfitpin-v2 at trueheadstop; combinedconnectorlocalCAD corrections; actualfinalcase/pocketframe unchanged.';a['unified_grid_manifest']=str(manifest);a['unified_raw_source']=str(raw);(out/'alignment-prepared.json').write_text(json.dumps(a,indent=2)+'\n');negative=copy.deepcopy(a);d=mujoco.MjData(m);d.qpos[:]=a['start_qpos'];mujoco.mj_forward(m,d);RR=d.body('upper_arm_module').xmat.reshape(3,3);offset=.001*(RR@np.array(a['feature_frame']['receiver_local_pocket_wall_normal']));qa=int(m.joint('forearm_module_free').qposadr[0])
+for k in ['start_qpos','initial_qpos','qpos_initial','reference_qpos','end_qpos','qpos_end']:
+ q=np.array(negative[k]);q[qa:qa+3]+=offset;negative[k]=q.tolist()
+negative['negative_wall_control']={'offset_world_m':offset.tolist(),'offset_m':.001};(out/'negative-alignment.json').write_text(json.dumps(negative,indent=2)+'\n')
+# Every contactfield must correspond to the rawscene's actual sourceOBJ.
+tree=ET.parse(raw);grids=json.loads(manifest.read_text());checks=[]
+for name,rec in grids['meshes'].items():
+ geom=tree.find(f".//body/geom[@name='{name}']")
+ if geom is None:geom=next(g for g in tree.iter('geom') if g.get('name')==name)
+ asset=tree.find(f"asset/mesh[@name='{geom.get('mesh')}']");file=Path(asset.get('file'));sha=hashlib.sha256(file.read_bytes()).hexdigest();ok=sha==rec['source_sha256'];checks.append({'name':name,'source_file':str(file),'source_sha256':sha,'grid_source_sha256':rec['source_sha256'],'same':ok})
+ if not ok:raise RuntimeError(f'Grid/source mismatch for{name}')
+prepare_scene(raw,manifest,out/'scene.xml');build_guide(out/'scene.xml',out/'alignment-prepared.json',out/'guide-scene.xml','forearm_module');build_guide(out/'scene.xml',out/'negative-alignment.json',out/'negative-guide-scene.xml','forearm_module');r={'raw_source':str(raw),'raw_source_sha256':hashlib.sha256(raw.read_bytes()).hexdigest(),'pin_asset':pin,'full51_qpos_registration_changed_indices':diffs,'manifest':str(manifest),'manifest_sha256':hashlib.sha256(manifest.read_bytes()).hexdigest(),'grid_source_checks':checks,'all_fields_match_source':all(x['same'] for x in checks)};(out/'preparation.json').write_text(json.dumps(r,indent=2)+'\n');print(json.dumps({'prepared':True,'source':str(raw),'manifest':str(manifest),'all_fields_match_source':r['all_fields_match_source'],'qposcount':m.nq,'pinchanged':diffs['start_qpos']},indent=2))
+# Generate matching native recorder/release helper copies. Parentdata staysimmutable.
+s=(out.parent/'record_candidate.py').read_text();s=s.replace("out=ROOT/'outputs/insertion-fix-20261107/final'","out=ROOT/'outputs/insertion-fix-20261107/final/unified'");s=s.replace("ROOT/'outputs/linear-insertion-updated-20261107/grids/manifest.json'",repr(str(manifest)));s=s.replace("ROOT/'outputs/linear-insertion-aligned-20261107/final/alignment.json'","out/'alignment-prepared.json'");s=s.replace("ROOT/'outputs/legacy-fit-port-20261107/final/legacy_mapped_20N.xml'","out/'guide-scene.xml'");s=s.replace("ROOT/'outputs/legacy-fit-port-20261107/final/negative-wall/source/guide-scene.xml'","out/'negative-guide-scene.xml'");(out/'record_unified.py').write_text(s)
+s=(out.parent/'test_release.py').read_text();s=s.replace("out=ROOT/'outputs/insertion-fix-20261107/final'","out=ROOT/'outputs/insertion-fix-20261107/final/unified'");s=s.replace("ROOT/'outputs/linear-insertion-updated-20261107/grids/manifest.json'",repr(str(manifest)));s=s.replace("ROOT/'outputs/linear-insertion-aligned-20261107/final/alignment.json'","out/'alignment-prepared.json'");s=s.replace("out/'width-0.0004-drive.npz'","out/'candidate-drive-state.npz'");s=s.replace("ROOT/'outputs/legacy-fit-port-20261107/final/legacy_mapped_20N.xml'","out/'guide-scene.xml'");s=s.replace("ROOT/'outputs/linear-insertion-updated-20261107/scene.xml'","out/'scene.xml'");(out/'release_unified.py').write_text(s)

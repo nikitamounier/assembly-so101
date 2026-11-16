@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-07",
+  "scope": "Matched PPO iteration throughput; no-driver SO101 MuJoCo4 all-loose scene",
+  "mujoco": "4.0.0",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "simulation_cpus": 46,
+  "controller_cpus": 4,
+  "workers": 23,
+  "environments": 8192,
+  "controls_per_update": 32,
+  "physics_substeps_per_control": 80,
+  "updates_per_variant": 2,
+  "valid_transitions_per_update": 262144,
+  "seed": 20261105,
+  "includes": [
+    "rollout",
+    "PPO update",
+    "logging",
+    "checkpoint saves"
+  ],
+  "excludes": [
+    "process initialization"
+  ],
+  "same_hosts_restarts_and_effective_allocations_verified": true,
+  "dense_training_metrics_exact": true,
+  "phases": {
+    "flat-dense": {
+      "iteration_s": [
+        1506.0706413574517,
+        1503.7412277804688
+      ],
+      "mean_iteration_s": 1504.9059345689602,
+      "collect_s": [
+        1504.6170091666281,
+        1502.4369119144976
+      ],
+      "update_s": [
+        1.3635672004893422,
+        1.221662662923336
+      ],
+      "save_s": [
+        0.05630281940102577,
+        0.07589786499738693
+      ]
+    },
+    "tree-dense": {
+      "iteration_s": [
+        113.6673009134829,
+        116.33603563904762
+      ],
+      "mean_iteration_s": 115.00166827626526,
+      "collect_s": [
+        112.2439849730581,
+        115.0258099688217
+      ],
+      "update_s": [
+        1.3396606026217341,
+        1.2047894559800625
+      ],
+      "save_s": [
+        0.0537459310144186,
+        0.0978726102039218
+      ]
+    },
+    "tree-sparse": {
+      "iteration_s": [
+        103.98884125705808,
+        107.1644089538604
+      ],
+      "mean_iteration_s": 105.57662510545924,
+      "collect_s": [
+        102.531105148606,
+        105.84378142934293
+      ],
+      "update_s": [
+        1.3651962941512465,
+        1.2157505601644516
+      ],
+      "save_s": [
+        0.05706898961216211,
+        0.09935510437935591
+      ]
+    }
+  },
+  "combined_speedup": 14.254158371379342,
+  "hierarchy_speedup": 13.085948726880789,
+  "sparse_additional_speedup": 1.089272063407894,
+  "raw_evidence_archive_sha256": "72d53c362f25f96938dd101a55a563eb1270038eb4df96f6860c41663b52dd5f",
+  "limitations": [
+    "Two updates per variant on one hardware cohort.",
+    "Sparse arithmetic changes numerical trajectories; physical and reward regression gates qualified separately.",
+    "Throughput does not establish learned assembly success or long-run learning equivalence."
+  ]
+}

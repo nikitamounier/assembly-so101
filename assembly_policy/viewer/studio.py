@@ -27,15 +27,30 @@ def main():
     data = mujoco.MjData(model)
 
     class InspectionCamera(plugin.ViewerPlugin):
+        focus = None
+        last_focus = None
+
+        @messages.handler
+        def on_update(self, event: messages.UpdateEvent):
+            if self.focus and self.focus != self.last_focus:
+                camera = self.viewer.camera
+                camera.lookat[:] = self.focus["target"]
+                camera.distance = self.focus["radius"] * 2.8
+                camera.azimuth = 110
+                camera.elevation = -30
+                self.last_focus = self.focus
+
         @messages.handler
         def on_model(self, event: messages.PostModelEvent):
+            self.last_focus = None
             self.viewer.camera.lookat[:] = [0, 0.025, 0.12]
             self.viewer.camera.distance = 1.15
             self.viewer.camera.azimuth = 110
             self.viewer.camera.elevation = -30
 
     config = viewer_protocol.ViewerConfig(title="SO-101 · Reset inspection", gfx="web", http_port=args.port)
-    with launch_web.launch(config, plugins=[InspectionCamera()]) as handle:
+    inspection_camera = InspectionCamera()
+    with launch_web.launch(config, plugins=[inspection_camera]) as handle:
         handle.set_model(model, data=data)
         version = -1
         while handle.is_running():
@@ -46,6 +61,7 @@ def main():
                 data.mocap_pos[:] = poses[:, :3]
                 data.mocap_quat[:] = poses[:, 3:]
                 mujoco.mj_forward(model, data)
+                inspection_camera.focus = snapshot.get("focus")
                 version = snapshot["version"]
             handle.sync(model, data)
             time.sleep(1 / 30)

@@ -138,9 +138,9 @@ def contact_state(m, d, task, side, predecessors):
             receiving += float(f[0])
         if "world" in names:
             table += float(f[0])
-        if names.intersection(set(PARTS) - {task} | {"driver", "world"}):
+        if names.intersection(set(PARTS) - {task} | {"world"}):
             external += float(f[0])
-        if any(n.startswith(("left_", "right_", "driver")) for n in names - {task}):
+        if any(n.startswith(("left_", "right_")) for n in names - {task}):
             robot += float(f[0])
     return dict(
         bilateral=min(forces.values()) > 0.001,
@@ -286,7 +286,7 @@ class Builder:
         angle = rng.uniform(-8, 8) * np.pi / 180
         Q = Rotation.from_rotvec([0, 0, angle]).as_matrix()
         noise = {}
-        for name in (*PARTS, "driver"):
+        for name in PARTS:
             body = d.body(name)
             position = anchor + Q @ (body.xpos - anchor) + shift
             rotation = Q @ body.xmat.reshape(3, 3)
@@ -404,7 +404,7 @@ class Builder:
         center = d.body("base").xpos.copy()
         delta = np.r_[rng.uniform(-0.003, 0.003, 2), 0.0]
         independent_noise = {}
-        for name in (*PARTS, "driver"):
+        for name in PARTS:
             body = d.body(name)
             position = center + Q @ (body.xpos - center) + delta
             rotation = Q @ body.xmat.reshape(3, 3)
@@ -983,7 +983,7 @@ class Builder:
         yaw = rng.uniform(-workcell_yaw, workcell_yaw) * np.pi / 180
         Q = Rotation.from_rotvec([0, 0, yaw]).as_matrix()
         independent = {}
-        for name in (*PARTS, "driver"):
+        for name in PARTS:
             body = d.body(name)
             p = anchor + Q @ (body.xpos - anchor) + delta
             rotation = Q @ body.xmat.reshape(3, 3)

@@ -22,8 +22,19 @@ def scene():
 def test_compiled_physics_matches_frozen_shared_reference(scene):
     assert assert_matches_reference(scene)["passed"]
     assert scene.nu == 12 and scene.neq == 0 and scene.ncam == 3
-    for part in (*TASK_NAMES, "base", "driver"):
+    for part in (*TASK_NAMES, "base"):
         assert scene.joint(part + "_free").type[0] == mujoco.mjtJoint.mjJNT_FREE
+
+
+def test_only_assembly_parts_are_free_and_threaded_screw_is_retained(scene):
+    free = {scene.joint(i).name for i in range(scene.njnt) if scene.jnt_type[i] == mujoco.mjtJoint.mjJNT_FREE}
+    assert free == {name + "_free" for name in (*TASK_NAMES, "base")}
+    assert scene.nq == 54 and scene.nv == 48 and scene.njnt == 18
+    for i in range(scene.ngeom):
+        assert not (scene.geom(i).name or "").startswith("driver")
+    for name in ("male_contact", "female_contact", "screw_head_contact"):
+        assert scene.geom(name).type[0] == mujoco.mjtGeom.mjGEOM_SDF
+        assert scene.geom_plugin[scene.geom(name).id] >= 0
 
 
 def test_search_capacity_and_contact_physics_are_shared(scene):
@@ -76,9 +87,11 @@ def test_versioned_bank_has_independent_all_loose_starts():
             assert np.isfinite(tr["states"]).all() and np.isfinite(ev["states"]).all()
 
 
-def test_old_bank_is_rejected_when_present():
-    bank = ROOT / "data/so101/banks_obsolete"
-    if not bank.exists():
-        pytest.skip("Previous local runtime is optional")
+def test_old_bank_is_rejected(tmp_path):
+    bank = tmp_path
+    # The previous MuJoCo 4 bank included the powered tool and its joints.
+    (bank / "manifest.json").write_text(
+        json.dumps({"model_signature": "24bf9df36cfa96467da94e7a07c3632116b709830d5b23d0420e6adcedd245e5"})
+    )
     with pytest.raises(ValueError, match="stale"):
         check_bank(bank)

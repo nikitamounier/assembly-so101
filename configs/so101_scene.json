@@ -1,5 +1,5 @@
 {
-  "source": "SO-101 native assembly workcell and bare HOTO S-A01",
+  "source": "Dual SO101 workcell with six free Hiwonder assembly parts",
   "mounts": {
     "left": {
       "position": [
@@ -118,27 +118,6 @@
       0,
       0,
       0
-    ],
-    "driver_free": [
-      -0.1405,
-      0.135,
-      0.01185,
-      0.5,
-      0.5,
-      0.5,
-      -0.5
-    ],
-    "button_forward": [
-      0.0
-    ],
-    "button_reverse": [
-      0.0
-    ],
-    "trigger_saddle": [
-      0.0
-    ],
-    "spindle": [
-      0.0
     ]
   },
   "effort_caps": {
@@ -213,8 +192,8 @@
       -1
     ]
   },
-  "profile": "shared-side-v14-horn-support",
-  "bank_directory": "data/so101/banks_shared_v14_mj4",
+  "profile": "shared-side-v14-horn-support-no-driver",
+  "bank_directory": "data/so101/banks_shared_v14_mj4_tree_sparse_portable",
   "contact_search": {
     "initpoints": 4,
     "iterations": 10
@@ -244,72 +223,6 @@
         2
       ],
       "margin": 5e-05
-    },
-    {
-      "name": "driver_table_tail",
-      "geom1": "table",
-      "geom2": "driver_case_tail",
-      "condim": 6,
-      "friction": [
-        0.7,
-        0.7,
-        0.005,
-        0.0001,
-        0.0001
-      ],
-      "solref": [
-        0.002,
-        1
-      ],
-      "solimp": [
-        0.95,
-        0.99,
-        0.0002
-      ]
-    },
-    {
-      "name": "driver_table_control",
-      "geom1": "table",
-      "geom2": "driver_case_control",
-      "condim": 6,
-      "friction": [
-        0.7,
-        0.7,
-        0.005,
-        0.0001,
-        0.0001
-      ],
-      "solref": [
-        0.002,
-        1
-      ],
-      "solimp": [
-        0.95,
-        0.99,
-        0.0002
-      ]
-    },
-    {
-      "name": "driver_table_front",
-      "geom1": "table",
-      "geom2": "driver_case_front",
-      "condim": 6,
-      "friction": [
-        0.7,
-        0.7,
-        0.005,
-        0.0001,
-        0.0001
-      ],
-      "solref": [
-        0.002,
-        1
-      ],
-      "solimp": [
-        0.95,
-        0.99,
-        0.0002
-      ]
     },
     {
       "name": "retainer_base_seating",
@@ -644,7 +557,7 @@
     }
   },
   "reset_distribution": "all_loose",
-  "reference_prefix": "data/so101/shared_v14_mj4_reference",
+  "reference_prefix": "data/so101/shared_v14_mj4_tree_sparse_portable_reference",
   "motor_base_search": {
     "initpoints": 40,
     "iterations": 40
@@ -653,7 +566,8 @@
     "iterations": 100,
     "tolerance": 1e-12,
     "noslip_iterations": 20,
-    "noslip_tolerance": 1e-12
+    "noslip_tolerance": 1e-12,
+    "jacobian": "sparse"
   },
   "contact_exclusions": [
     {

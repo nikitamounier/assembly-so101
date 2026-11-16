@@ -1,0 +1,651 @@
+"""Isolated sparse cube PPO with the unchanged shared SimBa/SGS/PPO math.
+
+python -m assembly_policy.cube_trial.train --run-dir runs/cube --envs 1024 --steps 32 --iters 10000 --nthread 2
+"""
+
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import hashlib
+import json
+import os
+import time
+from pathlib import Path
+
+import numpy as np
+import torch
+
+from assembly_policy.rl.nets import ActorCritic
+from assembly_policy.rl.sampler import ResetSampler
+
+from .core import ASSETS, FAMILIES, REWARD_CONTRACT_VERSION
+from .env import HISTORY
+from .obs import PointTables
+from .vecenv import LocalVecEnv
+
+ROOT = ASSETS.parent
+
+BANK_DIR = ROOT / "data/cube_trial/banks_pre_handoff_clear_v6"
+
+OBS = ("prop", "task", "tcp_p", "tcp_R", "part_p", "part_q", "finger")
+
+
+def parse(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--run-dir", required=True)
+    ap.add_argument(
+        "--init-policy", help="SO101 weights-only continuation into a fresh run; optimizer and SGS restart"
+    )
+    ap.add_argument("--suite", choices=["cube_trial"], default="cube_trial")
+    ap.add_argument("--so101-max-contact-depth", type=float, default=None)
+    ap.add_argument("--so101-stability", choices=["velocity", "pose"], default="pose")
+    ap.add_argument("--so101-safety-penalty", type=float, default=0.0)
+    ap.add_argument("--so101-physics", choices=["native"], default="native")
+
+    ap.add_argument("--tasks", default="all", help="all (default), or a '+'-separated list")
+    ap.add_argument("--bank-dir", default=str(BANK_DIR))
+    ap.add_argument("--envs", type=int, default=1024)
+    ap.add_argument("--iters", type=int, default=10000)
+    # PPO
+    ap.add_argument("--steps", type=int, default=32, help="rollout steps per environment and iteration")
+    ap.add_argument("--epochs", type=int, default=5)
+    ap.add_argument("--minibatches", type=int, default=4)
+    ap.add_argument("--lr", type=float, default=1e-4, help="initial learning rate (adaptive-KL schedule)")
+    ap.add_argument("--desired-kl", type=float, default=0.01)
+    ap.add_argument("--gamma", type=float, default=0.995)
+    ap.add_argument("--lam", type=float, default=0.95)
+    ap.add_argument("--clip", type=float, default=0.2)
+    ap.add_argument("--ent", type=float, default=0.005)
+    ap.add_argument("--vf-coef", type=float, default=1.0)
+    ap.add_argument("--max-grad", type=float, default=1.0)
+    ap.add_argument("--init-std", type=float, default=1.0)
+    ap.add_argument("--min-std", type=float, default=1e-3)
+    ap.add_argument("--max-std", type=float, default=2.0)
+    # reset bank and sampler
+    ap.add_argument("--sampler", default="beta", choices=["beta", "uniform"])
+    ap.add_argument("--eps-q", type=float, default=1e-4, help="beta sampler floor")
+    ap.add_argument("--history", type=int, default=50, help="outcomes kept per bank entry (L)")
+    ap.add_argument(
+        "--bank-per-family",
+        type=int,
+        default=128,
+        help="training entries per (task, reset family); entries are selected separately by task and reset family (0 = all)",
+    )
+    # environment
+    ap.add_argument(
+        "--action-scale-joints",
+        default="0.035+0.035+0.035+0.035+0.035",
+        help="rad per unit action for each arm joint ('+'-separated)",
+    )
+    ap.add_argument(
+        "--cost-coef", type=float, default=2e-5, help="control cost c (actions, joint speeds, torques)"
+    )
+    ap.add_argument(
+        "--action-rate-coef",
+        type=float,
+        default=0.0,
+        help="smoothness: reward -= coef * sum_j (a_t,j - a_t-1,j)^2 over the arm actions",
+    )
+    ap.add_argument(
+        "--action-rate-start", type=int, default=5000, help="iteration from which the action-rate term is on"
+    )
+    ap.add_argument("--n-part", type=int, default=256, help="cube surface points")
+    ap.add_argument("--n-fix", type=int, default=128, help="circle perimeter points")
+    ap.add_argument("--n-grip", type=int, default=64)
+    # infrastructure
+    ap.add_argument("--worker-init-wait", type=float, default=1.0)
+    ap.add_argument("--bind-host", default="127.0.0.1")
+    ap.add_argument("--advertise-host")
+    ap.add_argument("--port", type=int, default=0)
+    ap.add_argument("--tls-cert")
+    ap.add_argument("--tls-key")
+    ap.add_argument("--trusted-network", action="store_true")
+    ap.add_argument(
+        "--remote-workers", type=int, default=0, help="number of remote worker processes (0 = simulate here)"
+    )
+    ap.add_argument(
+        "--nthread",
+        type=int,
+        default=2,
+        help="simulation threads when simulating locally",
+    )
+    ap.add_argument(
+        "--accept-timeout", type=float, default=30.0, help="start with partial remote workers after this (s)"
+    )
+    ap.add_argument("--min-conn-frac", type=float, default=0.025)
+    ap.add_argument(
+        "--micro-batch", type=int, default=65536, help="samples per forward/backward chunk (GPU memory)"
+    )
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--save-every", type=int, default=1)
+    ap.add_argument(
+        "--keep-every", type=int, default=500, help="also keep model_<it>.pt every this many iterations"
+    )
+    ap.add_argument(
+        "--no-eval", action="store_true", help="do not evaluate kept checkpoints in the background"
+    )
+    ap.add_argument("--eval-threads", type=int, default=4)
+    ap.add_argument("--max-hours", type=float, default=1e9, help="save and exit after this wall time")
+    return ap.parse_args(argv)
+
+
+def load_banks(tasks, bank_dir, per_family=0):
+    """Pooled training bank: states, task ids, family ids (first per_family entries of each (task, family))."""
+    S, T, F = [], [], []
+    for k, t in enumerate(tasks):
+        z = np.load(Path(bank_dir) / f"{t}_train.npz")
+        fam = z["family"]
+        keep = np.ones(len(fam), bool)
+        if per_family > 0:
+            keep[:] = False
+            for f in np.unique(fam):
+                keep[np.nonzero(fam == f)[0][:per_family]] = True
+        S.append(z["states"][keep])
+        F.append(fam[keep])
+        T.append(np.full(keep.sum(), k))
+    return np.concatenate(S), np.concatenate(T), np.concatenate(F)
+
+
+class Trainer:
+    def __init__(self, a):
+        self.a = a
+        if min(a.envs, a.steps, a.epochs, a.minibatches, a.nthread, a.save_every) < 1:
+            raise ValueError("Environment, rollout, optimizer and save budgets must be positive")
+        from . import env as backend
+        from .resets import check_bank
+
+        self.backend = backend
+        point_tables, config_type, scales = PointTables, backend.EnvConfig, backend.parse_scales
+        resolve = backend.resolve_tasks
+        self.proprio_dim, self.act_dim = backend.PROPRIO_DIM, backend.ACT_DIM
+        self.arm_actions, self.prev_start = backend.ARM_ACTIONS, backend.PREVIOUS_ACTION_START
+        check_bank(a.bank_dir)
+        self.dev = torch.device(a.device)
+        if a.n_fix is None:
+            a.n_fix = 256 if self.backend else 128
+        self.tasks = resolve(a.tasks)
+        self.run = Path(a.run_dir)
+        self.run.mkdir(parents=True, exist_ok=True)
+        self.bank_S, self.bank_T, self.bank_F = load_banks(self.tasks, a.bank_dir, a.bank_per_family)
+        print(f"[train] {len(self.tasks)} tasks, {len(self.bank_S)} reset-bank entries", flush=True)
+        np.random.seed(a.seed)
+        torch.manual_seed(a.seed)
+        self.sampler = ResetSampler(len(self.bank_S), a.sampler, a.eps_q, a.history, seed=a.seed)
+        self.pts = point_tables(self.tasks, a.n_part, a.n_fix, a.n_grip, device=self.dev)
+        self.model = ActorCritic(
+            self.pts.n_pts,
+            proprio_dim=HISTORY * self.proprio_dim,
+            act_dim=self.act_dim,
+            init_std=a.init_std,
+            max_std=a.max_std,
+            min_std=a.min_std,
+        ).to(self.dev)
+        self.opt = torch.optim.Adam(self.model.parameters(), lr=a.lr)  # one optimizer for actor and critic
+        self.lr, self.it, self.transitions = a.lr, 0, 0
+        self._children = []  # background evaluations
+        if a.action_rate_coef != 0 or a.so101_safety_penalty != 0:
+            raise ValueError(
+                "Cube supports assembly control cost; extra smoothness/safety penalties must be zero"
+            )
+        self.ecfg = config_type(
+            nthread=a.nthread, cost_coef=a.cost_coef, action_scale_joints=scales(a.action_scale_joints),
+            reset_context_path=str(Path(a.bank_dir) / "reset-context.npz")
+            if (Path(a.bank_dir) / "reset-context.npz").is_file() else None
+        )
+        self.args = dict(
+            vars(a), env={k: v for k, v in dataclasses.asdict(self.ecfg).items() if k != "nthread"}
+        )
+        self.args["reward_contract_version"] = REWARD_CONTRACT_VERSION
+        if self.backend:
+            self.args["observation_signature"] = self.pts.signature
+            self.args["environment_signature"] = hashlib.sha256(
+                Path(backend.__file__).read_bytes()
+            ).hexdigest()
+        env_type = None if self.backend is None else self.backend.BatchedAssemblyEnv
+        if self.backend:
+            from .resets import directory_signature, pooled_signature, signature
+
+            self.args["model_signature"] = signature()
+            self.args["bank_signature"] = pooled_signature((self.bank_S, self.bank_T, self.bank_F))
+            self.args["bank_directory_signature"] = directory_signature(a.bank_dir)
+            self.args["physics_backend"] = a.so101_physics
+            self.args["physics_signature"] = self.args["model_signature"]
+        self._maybe_resume()
+        (self.run / "config.json").write_text(json.dumps(self.args, indent=1))
+        horizon = int(round(self.ecfg.horizon_s / self.ecfg.control_dt))
+        t0 = np.random.default_rng(a.seed + 7).integers(0, horizon, a.envs)  # desynchronized episode clocks
+        if a.remote_workers > 0:
+            from .remote import RemoteVecEnv
+
+            cost = np.ones(len(self.tasks))
+            self.env = RemoteVecEnv(
+                self.run,
+                self.tasks,
+                a.envs,
+                self.ecfg,
+                self._provider,
+                a.remote_workers,
+                t0,
+                accept_timeout=a.accept_timeout,
+                min_frac=a.min_conn_frac,
+                task_cost=cost,
+                entry_key=self.bank_T * len(FAMILIES) + self.bank_F,
+                n_keys=len(self.tasks) * len(FAMILIES),
+                init_wait=a.worker_init_wait,
+                bind_host=a.bind_host,
+                advertise_host=a.advertise_host,
+                port=a.port,
+                tls_cert=a.tls_cert,
+                tls_key=a.tls_key,
+                trusted_network=a.trusted_network,
+                model_signature=self.args["model_signature"],
+            )
+        else:
+            self.env = LocalVecEnv(self.tasks, a.envs, self.ecfg, self._provider, t0, env_type=env_type)
+
+        from .telemetry import EpisodeRecorder
+
+        self.telemetry = EpisodeRecorder(self.run, a.envs, FAMILIES, horizon=horizon)
+
+    # ------------------------------------------------------------- helpers
+    def _provider(self, k, finished=None, outcomes=None):
+        """Record finished episodes in the sampler, then draw k reset-bank entries."""
+        if finished is not None and len(finished):
+            self.sampler.update(finished, outcomes)
+        e = self.sampler.sample(k)
+        return e, self.bank_S[e], self.bank_T[e]
+
+    def _obs(self, o, ids=None):
+        sel = (lambda x: x) if ids is None else (lambda x: x[ids])
+        f = lambda k, dt=torch.float32: torch.as_tensor(sel(o[k]), dtype=dt, device=self.dev)
+        return dict(
+            prop=f("proprio"),
+            task=f("task", torch.long),
+            tcp_p=f("tcp_p"),
+            tcp_R=f("tcp_R"),
+            part_p=f("part_p"),
+            part_q=f("part_q"),
+            finger=f("finger"),
+        )
+
+    def _points(self, ob):
+        return self.pts(ob["task"], ob["tcp_p"], ob["tcp_R"], ob["part_p"], ob["part_q"], ob["finger"])
+
+    # ------------------------------------------------------------- checkpoints
+    def save(self, keep=False):
+        torch.save(self.sampler.state_dict(), self.run / "sampler.pt.tmp")
+        os.replace(self.run / "sampler.pt.tmp", self.run / "sampler.pt")
+        d = dict(
+            model=self.model.state_dict(),
+            opt=self.opt.state_dict(),
+            lr=self.lr,
+            it=self.it,
+            transitions=self.transitions,
+            args=self.args,
+            sampler=self.sampler.state_dict(),
+        )
+        torch.save(d, self.run / "checkpoint.pt.tmp")
+        os.replace(self.run / "checkpoint.pt.tmp", self.run / "checkpoint.pt")
+        if keep:
+            ck = self.run / f"model_{self.it:06d}.pt"
+            torch.save(
+                dict(model=self.model.state_dict(), it=self.it, transitions=self.transitions, args=self.args),
+                ck,
+            )
+            if not self.a.no_eval:
+                self._evaluate(ck)
+
+    def _evaluate(self, ck):
+        raise RuntimeError("Cube evaluation is separate; use --no-eval (default)")
+
+    def _maybe_resume(self):
+        p = self.run / "checkpoint.pt"
+        if not p.exists():
+            initial = getattr(self.a, "init_policy", None)
+            if initial:
+                if self.backend is None:
+                    raise ValueError("--init-policy currently requires --suite so101")
+                d = torch.load(initial, map_location=self.dev, weights_only=False)
+                from .obs import require_observation_signature
+
+                require_observation_signature(d.get("args", {}), self.pts)
+                if d.get("args", {}).get("model_signature") != self.args["model_signature"]:
+                    raise ValueError(
+                        "Warm-start policy uses different physics; explicit separate qualification required"
+                    )
+                if d.get("args", {}).get("observation_signature") != self.args["observation_signature"]:
+                    raise ValueError("Warm-start observation contract differs; start a fresh policy")
+                if self.backend.resolve_tasks(d["args"]["tasks"]) != self.tasks:
+                    raise ValueError("Warm-start task order differs")
+                self.model.load_state_dict(d["model"])
+                self.model.project_()
+                with Path(initial).open("rb") as source:
+                    parent_hash = hashlib.sha256(source.read()).hexdigest()
+                self.args["parent_policy"] = {
+                    "path": str(Path(initial).resolve()),
+                    "iteration": d.get("it"),
+                    "transitions": d.get("transitions"),
+                    "sha256": parent_hash,
+                    "physics_backend": d["args"].get("physics_backend", "native"),
+                    "optimizer_reused": False,
+                    "sampler_reused": False,
+                }
+                print("[train] weights-only continuation; fresh optimizer and SGS", flush=True)
+            return
+        d = torch.load(p, map_location=self.dev, weights_only=False)
+        if self.backend:
+            from .obs import require_observation_signature
+
+            require_observation_signature(d.get("args", {}), self.pts)
+        if self.backend and (
+            d.get("args", {}).get("environment_signature") != self.args["environment_signature"]
+            or d.get("args", {}).get("model_signature") != self.args["model_signature"]
+            or d.get("args", {}).get("bank_signature") != self.args["bank_signature"]
+            or d.get("args", {}).get("bank_directory_signature") != self.args.get("bank_directory_signature")
+            or d.get("args", {}).get("observation_signature") != self.args["observation_signature"]
+            or d["args"].get("physics_backend", "native") != self.args["physics_backend"]
+            or d["args"].get("physics_signature", d["args"]["model_signature"])
+            != self.args["physics_signature"]
+            or self.backend.resolve_tasks(d["args"]["tasks"]) != self.tasks
+            or self.backend.EnvConfig(**{**d["args"]["env"], "nthread": self.ecfg.nthread}) != self.ecfg
+        ):
+            raise ValueError(
+                "SO101 checkpoint assets/reset bank/task order/environment/backend/observations differ; start a separate run directory"
+            )
+        self.model.load_state_dict(d["model"])
+        self.opt.load_state_dict(d["opt"])
+        self.model.project_()
+        self.lr, self.it, self.transitions = d["lr"], d["it"], d["transitions"]
+        if "parent_policy" in d.get("args", {}):
+            self.args["parent_policy"] = d["args"]["parent_policy"]
+        sp = self.run / "sampler.pt"
+        st = d.get("sampler")
+        if st is None and sp.exists():
+            st = torch.load(sp, weights_only=False)
+        if st is None:
+            raise ValueError(
+                "Checkpoint is missing SGS state; use a complete checkpoint or explicit weights-only initialization"
+            )
+        if any(np.shape(st[k]) != np.shape(getattr(self.sampler, k)) for k in ("buf", "cnt", "ptr", "sum")):
+            raise ValueError("Checkpoint SGS state shape differs from the current reset bank/history")
+        self.sampler.load_state_dict(st)
+        self._set_lr()
+        print(f"[train] resumed at iteration {self.it}", flush=True)
+
+    def _set_lr(self):
+        for g in self.opt.param_groups:
+            g["lr"] = self.lr
+
+    # ------------------------------------------------------------- rollout
+    def collect(self):
+        a, N, T = self.a, self.a.envs, self.a.steps
+        rate = a.action_rate_coef if self.it >= a.action_rate_start else 0.0
+        buf = {k: [] for k in OBS}
+        acts, logps, vals, rews, dones, mus, valids = [], [], [], [], [], [], []
+        st = dict(
+            done=0,
+            success=0,
+            safety=0,
+            unstable=0,
+            ep_len=[],
+            fam_n=np.zeros(len(FAMILIES)),
+            fam_s=np.zeros(len(FAMILIES)),
+            task_n=np.zeros(len(self.tasks)),
+            task_s=np.zeros(len(self.tasks)),
+            sim=0.0,
+        )
+        self.model.eval()
+        for t in range(T):
+            raw_observation = self.env.observe()
+            telemetry_entries = self.env.entry.copy()
+            self.telemetry.begin(raw_observation, telemetry_entries)
+            ob = self._obs(raw_observation)
+            alive = torch.as_tensor(self.env.alive_mask(), device=self.dev)
+            with torch.no_grad():
+                self.model.norm.update(ob["prop"][alive])
+                pts = self._points(ob)
+                dist = self.model.dist(pts, ob["prop"])
+                act = dist.sample()
+                logp = dist.log_prob(act).sum(-1)
+                v = self.model.value(pts, ob["prop"])
+                prev = ob["prop"].view(N, HISTORY, self.proprio_dim)[
+                    :, -1, self.prev_start : self.prev_start + self.act_dim
+                ][:, self.arm_actions]
+                rate_pen = (rate * ((act[:, self.arm_actions] - prev) ** 2).sum(1)).cpu().numpy()
+            t1 = time.perf_counter()
+            r, done, info, final_obs, finished = self.env.step(act.cpu().numpy())
+            self.telemetry.step(r.copy(), done, info, final_obs, self.bank_F[telemetry_entries], self.it + 1)
+            st["sim"] += time.perf_counter() - t1
+            valid = info["valid"]
+            st["unstable"] += int(np.sum(info["unstable"] & valid))
+            r = r.astype(np.float32) - np.where(valid, rate_pen, 0.0).astype(np.float32)
+            ids = np.nonzero(done)[0]
+            if len(ids) and info["timeout"][ids].any():  # time-outs bootstrap from the final state's value
+                sel = np.nonzero(info["timeout"][ids])[0]
+                obf = self._obs(final_obs, sel)
+                with torch.no_grad():
+                    r[ids[sel]] += a.gamma * self.model.value(self._points(obf), obf["prop"]).cpu().numpy()
+            for k in OBS:
+                buf[k].append(ob[k])
+            acts.append(act)
+            logps.append(logp)
+            vals.append(v)
+            mus.append(dist.mean)
+            rews.append(torch.as_tensor(r, device=self.dev))
+            # a transition whose worker was lost (or that precedes a worker joining) ends the GAE trace
+            dones.append(torch.as_tensor(done | ~valid, device=self.dev))
+            valids.append(torch.as_tensor(valid, device=self.dev))
+            if len(ids):
+                succ = info["success"][ids]
+                st["done"] += len(ids)
+                st["success"] += int(succ.sum())
+                st["safety"] += int(info["safety"][ids].sum())
+                st["ep_len"] += info["ep_len"][ids].tolist()
+                np.add.at(st["fam_n"], self.bank_F[finished], 1)
+                np.add.at(st["fam_s"], self.bank_F[finished], succ)
+                np.add.at(st["task_n"], self.bank_T[finished], 1)
+                np.add.at(st["task_s"], self.bank_T[finished], succ)
+        ob = self._obs(self.env.observe())
+        with torch.no_grad():
+            last_v = self.model.value(self._points(ob), ob["prop"])
+        batch = {k: torch.stack(v) for k, v in buf.items()}
+        batch.update(
+            act=torch.stack(acts),
+            logp=torch.stack(logps),
+            val=torch.stack(vals),
+            mu=torch.stack(mus),
+            rew=torch.stack(rews),
+            done=torch.stack(dones).float(),
+            valid=torch.stack(valids),
+        )
+        adv = torch.zeros_like(batch["rew"])
+        gae = torch.zeros(N, device=self.dev)
+        for t in reversed(range(T)):  # GAE
+            nv = last_v if t == T - 1 else batch["val"][t + 1]
+            nd = 1.0 - batch["done"][t]
+            delta = batch["rew"][t] + a.gamma * nv * nd - batch["val"][t]
+            gae = delta + a.gamma * a.lam * nd * gae
+            gae = torch.where(
+                batch["valid"][t], gae, torch.zeros_like(gae)
+            )  # lost transitions do not leak -V
+            adv[t] = gae
+        batch["ret"], batch["adv"] = adv + batch["val"], adv
+        self.transitions += int(batch["valid"].sum())
+        return batch, st
+
+    # ------------------------------------------------------------- PPO update
+    def update(self, batch):
+        a = self.a
+        self.model.train()
+        n_all = batch["rew"].numel()
+        flat = {k: v.reshape(n_all, *v.shape[2:]) for k, v in batch.items()}
+        keep = torch.nonzero(flat.pop("valid")).squeeze(1)  # drop transitions of lost/joining workers
+        flat = {k: v[keep] for k, v in flat.items()}
+        B = len(keep)
+        if B == 0:
+            raise ValueError("No valid transitions in PPO rollout; no optimizer step performed")
+        if a.minibatches < 1 or a.epochs < 1:
+            raise ValueError("PPO requires positive epochs and minibatches")
+        flat["adv"] = (flat["adv"] - flat["adv"].mean()) / (flat["adv"].std(unbiased=B > 1) + 1e-8)
+        n_minibatches = min(a.minibatches, B)
+        sigma_old = self.model.std().detach().clone()
+        logs = dict(pi=0.0, vf=0.0, ent=0.0, kl=0.0)
+        for _ in range(a.epochs):
+            perm = torch.randperm(B, device=self.dev)
+            for idx in torch.tensor_split(perm, n_minibatches):
+                self.opt.zero_grad(set_to_none=True)
+                kl = torch.zeros((), device=self.dev)
+                for c0 in range(0, len(idx), a.micro_batch):  # gradient accumulation over micro-batches
+                    cidx = idx[c0 : c0 + a.micro_batch]
+                    w = len(cidx) / len(idx)
+                    ob = {k: flat[k][cidx] for k in OBS}
+                    pts = self._points(ob)
+                    d = self.model.dist(pts, ob["prop"])
+                    logp = d.log_prob(flat["act"][cidx]).sum(-1)
+                    ent = d.entropy().sum(-1).mean()
+                    v = self.model.value(pts, ob["prop"])
+                    with torch.no_grad():  # analytic KL(old || new) between diagonal Gaussians
+                        mu_o, mu_n, sd_n = flat["mu"][cidx], d.mean, d.stddev
+                        kl += (
+                            w
+                            * (
+                                torch.log(sd_n / sigma_old)
+                                + (sigma_old**2 + (mu_o - mu_n) ** 2) / (2 * sd_n**2)
+                                - 0.5
+                            )
+                            .sum(-1)
+                            .mean()
+                        )
+                    ratio = torch.exp(logp - flat["logp"][cidx])
+                    A = flat["adv"][cidx]
+                    pi_loss = -torch.min(ratio * A, ratio.clamp(1 - a.clip, 1 + a.clip) * A).mean()
+                    v_old, ret = flat["val"][cidx], flat["ret"][cidx]
+                    v_clip = v_old + (v - v_old).clamp(-a.clip, a.clip)
+                    vf_loss = torch.max((v - ret) ** 2, (v_clip - ret) ** 2).mean()
+                    (w * (pi_loss + a.vf_coef * vf_loss - a.ent * ent)).backward()
+                    logs["pi"] += w * pi_loss.item()
+                    logs["vf"] += w * vf_loss.item()
+                    logs["ent"] += w * ent.item()
+                if kl.item() > 2.0 * a.desired_kl:  # adaptive-KL learning rate (rsl_rl schedule)
+                    self.lr = max(1e-5, self.lr / 1.5)
+                elif 0.0 < kl.item() < a.desired_kl / 2.0:
+                    self.lr = min(1e-3, self.lr * 1.5)
+                self._set_lr()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), a.max_grad)
+                self.opt.step()
+                self.model.project_()
+                logs["kl"] += kl.item()
+        n = a.epochs * n_minibatches
+        return {k: v / n for k, v in logs.items()}
+
+    def train(self):
+        a = self.a
+        log_f = open(self.run / "log.jsonl", "a")
+        t_start = time.time()
+        while self.it < a.iters:
+            t0 = time.time()
+            transitions_before = self.transitions
+            try:
+                batch, st = self.collect()
+            except (EOFError, ConnectionError, BrokenPipeError) as e:
+                print(f"[train] simulation worker lost ({e!r}); exiting for restart", flush=True)
+                raise SystemExit(3)
+            t1 = time.time()
+            if self.backend and self.it == 0:
+                # Fit normalization with the first real rollout, then freeze a
+                # genuinely unupdated actor for matched before/after assessment.
+                initial = dict(
+                    model=self.model.state_dict(),
+                    it=0,
+                    transitions=self.transitions,
+                    args=self.args,
+                    scope="first rollout normalization; before first PPO update",
+                )
+                path = self.run / "initial_policy.pt"
+                torch.save(initial, path.with_suffix(".pt.tmp"))
+                os.replace(path.with_suffix(".pt.tmp"), path)
+            try:
+                losses = self.update(batch)
+            except ValueError as error:
+                if str(error) != "No valid transitions in PPO rollout; no optimizer step performed":
+                    raise
+                self.save()
+                raise SystemExit(3) from error
+            if self.backend and (
+                not all(np.isfinite(v) for v in losses.values())
+                or not all(bool(torch.isfinite(p).all()) for p in self.model.parameters())
+            ):
+                raise FloatingPointError("Nonfinite SO101 PPO update; keep the previous checkpoint")
+            self.it += 1
+            n_ep = max(st["done"], 1)
+            rec = dict(
+                it=self.it,
+                release_angle_rad=0.275,
+                reward_contract_version=REWARD_CONTRACT_VERSION,
+                transitions=self.transitions,
+                fps=(self.transitions - transitions_before) / (time.time() - t0),
+                valid_transitions=self.transitions - transitions_before,
+                target_transitions=a.envs * a.steps,
+                t_sim=st["sim"],
+                t_update=time.time() - t1,
+                lr=self.lr,
+                std=float(self.model.std().detach().mean()),
+                episodes=st["done"],
+                success=st["success"] / n_ep,
+                safety=st["safety"] / n_ep,
+                unstable=st["unstable"],
+                sampler_effective_fraction=self.sampler.entropy_ratio(),
+                ep_len=float(np.mean(st["ep_len"])) if st["ep_len"] else 0.0,
+                fam_success={
+                    f: (st["fam_s"][i] / st["fam_n"][i] if st["fam_n"][i] else None)
+                    for i, f in enumerate(FAMILIES)
+                },
+                task_success={
+                    t: (st["task_s"][i] / st["task_n"][i] if st["task_n"][i] else None)
+                    for i, t in enumerate(self.tasks)
+                },
+                task_episodes={t: int(st["task_n"][i]) for i, t in enumerate(self.tasks)},
+                visited=float((self.sampler.cnt > 0).mean()),
+                **losses,
+            )
+            if hasattr(self.env, "profile"):
+                rec["workers"] = self.env.profile()
+                self.env.reset_profile()
+            rec.update(self.telemetry.flush(self.it, self.transitions))
+            log_f.write(json.dumps(rec) + "\n")
+            log_f.flush()
+            if self.it % 10 == 0 or self.it <= 3:
+                fam = " ".join(f"{f[:4]}={v:.2f}" for f, v in rec["fam_success"].items() if v is not None)
+                print(
+                    f"it {self.it} T={self.transitions / 1e6:.1f}M fps={rec['fps']:.0f} train_success={rec['success']:.3f} "
+                    f"[{fam}] safety={rec['safety']:.3f} len={rec['ep_len']:.0f} kl={losses['kl']:.4f} lr={self.lr:.1e} "
+                    f"std={rec['std']:.3f} sim={st['sim']:.1f}s update={rec['t_update']:.1f}s",
+                    flush=True,
+                )
+            if self.it % a.save_every == 0 or self.it == a.iters:
+                self.save(keep=self.it % a.keep_every == 0 or self.it == a.iters)
+            if (time.time() - t_start) / 3600 > a.max_hours or getattr(self, "stop_requested", False):
+                self.save()
+                break
+
+
+def main():
+    import signal
+
+    tr = Trainer(parse())
+    tr.stop_requested = False
+    signal.signal(signal.SIGTERM, lambda *_: setattr(tr, "stop_requested", True))
+    try:
+        tr.train()
+    except KeyboardInterrupt:
+        tr.save()
+    finally:
+        tr.env.close()
+    for p in tr._children:  # let the background evaluations of the last kept checkpoints finish
+        p.wait()
+
+
+if __name__ == "__main__":
+    main()

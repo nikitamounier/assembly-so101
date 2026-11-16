@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "run_dir": "REPLACE_WITH_NEW_SHARED_RUN",
+  "root": "REPLACE_WITH_FROZEN_SOURCE",
+  "python": "REPLACE_WITH_CLUSTER_VENV_PYTHON",
+  "worker_script": "REPLACE_WITH_FROZEN_SOURCE/scripts/compute/worker.sbatch",
+  "worker_script_sha256": "REPLACE_AFTER_FREEZING",
+  "base_job_ids": [],
+  "max_chimera_cpus": 1000,
+  "worker_slots": 512,
+  "cloud_workers": 100,
+  "max_jobs_per_cycle": 10
+}
